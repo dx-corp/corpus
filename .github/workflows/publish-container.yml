@@ -11,7 +11,7 @@ permissions:
   packages: write
 
 env:
-  IMAGE: ghcr.io/evalops/corpus-server
+  IMAGE: ghcr.io/dx-corp/corpus-server
 
 jobs:
   publish:
