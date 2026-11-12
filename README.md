@@ -40,10 +40,12 @@ endpoint (Linux / Windows)           control plane
 ```
 
 Merlin can optionally forward its accepted JSONL segments to
-`/api/v1/integrations/merlin/segments`. Corpus stores the raw, identity-bearing
-telemetry separately from verified artifact occurrences, so a process event
-can be joined to later byte capture without treating a path or event as a
-file hash. Use a dedicated `CORPUS_MERLIN_INGEST_TOKEN`; do not share the
+`/api/v1/integrations/merlin/segments`. Corpus stores the events that name an
+artifact digest, separately from verified artifact occurrences, so a process
+event can be joined to later byte capture without treating a path or event as
+a file hash. Every other event is counted on its segment and stays in Merlin's
+spool; `GET /api/v1/integrations/merlin/observations` lists stored
+(artifact-bearing) events only. Use a dedicated `CORPUS_MERLIN_INGEST_TOKEN`; do not share the
 Corpus admin token or Merlin's sensor sync key.
 Each batch returns a versioned delivery receipt containing the canonical segment
 digest, accepted/duplicate counts, and a stable segment ID. Merlin validates
