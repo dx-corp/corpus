@@ -107,41 +107,75 @@ pub async fn ingest_segment(
         }
     };
 
-    let mut accepted_events = 0usize;
+    // One statement per batch: a row-at-a-time loop costs one database
+    // round trip per event, which put 1,000-event batches past the
+    // bridge's request timeout, so every timed-out batch rolled back.
+    let count = req.events.len();
+    let mut ids = Vec::with_capacity(count);
+    let mut event_ids = Vec::with_capacity(count);
+    let mut boot_ids = Vec::with_capacity(count);
+    let mut source_seqs = Vec::with_capacity(count);
+    let mut kinds = Vec::with_capacity(count);
+    let mut process_keys = Vec::with_capacity(count);
+    let mut artifact_sha256s = Vec::with_capacity(count);
+    let mut observed_ats = Vec::with_capacity(count);
     for (index, event) in req.events.iter().enumerate() {
         let identity = event_identity(index, event)?;
-        let result = sqlx::query(
-            "INSERT INTO merlin_observation
-             (id, tenant_id, segment_id, host_name, segment, event_id, boot_id,
-              source_seq, kind, process_key, artifact_sha256, observed_at,
-              received_at, payload)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,NOW(),$13)
-             ON CONFLICT (tenant_id, host_name, event_id) DO NOTHING",
-        )
-        .bind(Uuid::new_v4())
-        .bind(tenant_id)
-        .bind(segment_id)
-        .bind(&req.host_name)
-        .bind(&req.segment)
-        .bind(&identity.event_id)
-        .bind(&identity.boot_id)
-        .bind(identity.source_seq)
-        .bind(&identity.kind)
-        .bind(&identity.process_key)
-        .bind(&identity.artifact_sha256)
-        .bind(identity.observed_at)
-        .bind(event)
-        .execute(&mut *tx)
-        .await?;
-        accepted_events += result.rows_affected() as usize;
+        ids.push(Uuid::new_v4());
+        event_ids.push(identity.event_id);
+        boot_ids.push(identity.boot_id);
+        source_seqs.push(identity.source_seq);
+        kinds.push(identity.kind);
+        process_keys.push(identity.process_key);
+        artifact_sha256s.push(identity.artifact_sha256);
+        observed_ats.push(identity.observed_at);
     }
+    // ON CONFLICT DO NOTHING also skips a repeat of an event_id within the
+    // same batch, so the first occurrence wins as it did row by row.
+    let accepted_events = sqlx::query(
+        "INSERT INTO merlin_observation
+         (id, tenant_id, segment_id, host_name, segment, event_id, boot_id,
+          source_seq, kind, process_key, artifact_sha256, observed_at,
+          received_at, payload)
+         SELECT e.id, $1, $2, $3, $4, e.event_id, e.boot_id, e.source_seq,
+                e.kind, e.process_key, e.artifact_sha256, e.observed_at,
+                NOW(), e.payload
+         FROM UNNEST($5::uuid[], $6::text[], $7::text[], $8::bigint[],
+                     $9::text[], $10::text[], $11::text[], $12::timestamptz[],
+                     $13::jsonb[])
+              WITH ORDINALITY AS e(id, event_id, boot_id, source_seq, kind,
+                                   process_key, artifact_sha256, observed_at,
+                                   payload, ord)
+         ORDER BY e.ord
+         ON CONFLICT (tenant_id, host_name, event_id) DO NOTHING",
+    )
+    .bind(tenant_id)
+    .bind(segment_id)
+    .bind(&req.host_name)
+    .bind(&req.segment)
+    .bind(&ids)
+    .bind(&event_ids)
+    .bind(&boot_ids)
+    .bind(&source_seqs)
+    .bind(&kinds)
+    .bind(&process_keys)
+    .bind(&artifact_sha256s)
+    .bind(&observed_ats)
+    .bind(&req.events)
+    .execute(&mut *tx)
+    .await?
+    .rows_affected() as usize;
 
+    // Every observation carrying this segment_id is inserted here, so the
+    // stored count advances by the rows just inserted. Recounting with
+    // COUNT(*) scanned merlin_observation, which has no segment_id index.
     sqlx::query(
         "UPDATE merlin_segment
-         SET event_count = (SELECT COUNT(*) FROM merlin_observation WHERE segment_id = $1)
+         SET event_count = event_count + $2
          WHERE id = $1",
     )
     .bind(segment_id)
+    .bind(accepted_events as i64)
     .execute(&mut *tx)
     .await?;
     tx.commit().await?;
