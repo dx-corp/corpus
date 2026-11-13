@@ -72,9 +72,11 @@ async fn merlin_segment_ingest_is_idempotent_and_rejects_digest_conflicts() {
 
     let mut conflict = req.clone();
     conflict.segment_sha256 = "B".repeat(64);
-    assert!(merlin::ingest_segment(&pool, tenant_id, &conflict)
-        .await
-        .is_err());
+    assert!(
+        merlin::ingest_segment(&pool, tenant_id, &conflict)
+            .await
+            .is_err()
+    );
 }
 
 #[tokio::test]

@@ -4,7 +4,7 @@
 use corpus_core::cas::FsCas;
 use corpus_core::dto::{AnnounceRequest, FinalizeRequest, OccurrenceInfo};
 use corpus_core::semantic::fixtures::{
-    compile_fixture, BASE_SOURCE, TWEAK_SOURCE, UNRELATED_SOURCE,
+    BASE_SOURCE, TWEAK_SOURCE, UNRELATED_SOURCE, compile_fixture,
 };
 use corpus_core::similarity::edges;
 use corpus_core::similarity::model::edge_type;

@@ -34,7 +34,9 @@ fn main() {
     let job: Job = match serde_json::from_str(&input) {
         Ok(j) => j,
         Err(e) => {
-            println!("{{\"status\":\"error\",\"matches\":[],\"duration_ms\":0,\"error_code\":\"bad job json: {e}\"}}");
+            println!(
+                "{{\"status\":\"error\",\"matches\":[],\"duration_ms\":0,\"error_code\":\"bad job json: {e}\"}}"
+            );
             std::process::exit(64);
         }
     };
@@ -56,7 +58,7 @@ fn run(job: &Job) -> Outcome {
                 matches: serde_json::json!([]),
                 duration_ms: 0,
                 error_code: Some(format!("compile: {e}")),
-            }
+            };
         }
     };
     let bytes = match std::fs::read(&job.sample_path) {
@@ -67,7 +69,7 @@ fn run(job: &Job) -> Outcome {
                 matches: serde_json::json!([]),
                 duration_ms: 0,
                 error_code: Some(format!("read sample: {e}")),
-            }
+            };
         }
     };
     let outcome = corpus_core::scan::scan_bytes(&rules, &bytes);

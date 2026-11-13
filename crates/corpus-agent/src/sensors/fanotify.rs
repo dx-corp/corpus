@@ -4,10 +4,10 @@
 //! entries. Requires appropriate capabilities; falls back to poll when
 //! unavailable.
 
-use crate::state::{priority, StateDb};
+use crate::state::{StateDb, priority};
 
 const OUTCOME_SENSOR_OVERFLOW: &str = "SENSOR_OVERFLOW";
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use std::os::unix::io::RawFd;
 use std::path::PathBuf;
 use std::sync::mpsc as std_mpsc;

@@ -388,9 +388,11 @@ mod tests {
         let mut bytes = vec![0u8; 256];
         bytes[100..104].copy_from_slice(b"UPX!");
         let report = triage("pe", &bytes, &[], 2, false);
-        assert!(report
-            .signals
-            .iter()
-            .any(|s| s.name == "packer_marker" && s.fired));
+        assert!(
+            report
+                .signals
+                .iter()
+                .any(|s| s.name == "packer_marker" && s.fired)
+        );
     }
 }

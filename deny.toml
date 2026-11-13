@@ -1,0 +1,88 @@
+[graph]
+all-features = false
+
+[advisories]
+db-urls = ["https://github.com/rustsec/advisory-db"]
+# Every entry below was present in dx-corp/corpus@42926cb9539da44f211dd7fecb5dd23ed44ce2d2
+# when Mono imported it unchanged. The Corpus lockfile update that clears them is
+# the next Corpus change after the import; delete each entry as its crate moves.
+ignore = [
+    { id = "RUSTSEC-2023-0071", reason = "rsa 0.9.10 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
+    { id = "RUSTSEC-2024-0449", reason = "unsafe-libyaml 0.2.11 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
+    { id = "RUSTSEC-2025-0134", reason = "rustls-pemfile 2.2.0 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
+    { id = "RUSTSEC-2025-0141", reason = "bincode 2.0.1 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
+    { id = "RUSTSEC-2026-0222", reason = "wasmtime 43.0.2 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
+    { id = "RUSTSEC-2026-0258", reason = "h2 0.4.15 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
+    { id = "RUSTSEC-2026-0269", reason = "wasmtime 43.0.2 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
+    { id = "RUSTSEC-2026-0285", reason = "rustls 0.23.43 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
+    { id = "RUSTSEC-2026-0316", reason = "wasmtime 43.0.2 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
+    { id = "RUSTSEC-2026-0327", reason = "wasmtime 43.0.2 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
+    { id = "RUSTSEC-2026-0346", reason = "rustls 0.23.43 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
+    { id = "RUSTSEC-2026-0348", reason = "rustls 0.23.43 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
+    { id = "RUSTSEC-2026-0349", reason = "rustls 0.23.43 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
+    { id = "RUSTSEC-2026-0359", reason = "wasmtime 43.0.2 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
+    { id = "RUSTSEC-2026-0362", reason = "wasmtime 43.0.2 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
+    { id = "RUSTSEC-2026-0363", reason = "wasmtime 43.0.2 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
+    { id = "RUSTSEC-2026-0367", reason = "zip 8.6.0 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
+    { id = "RUSTSEC-2026-0368", reason = "zip 8.6.0 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
+    { id = "RUSTSEC-2026-0369", reason = "zip 8.6.0 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
+    { id = "RUSTSEC-2026-0379", reason = "wasmtime 43.0.2 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
+    { id = "RUSTSEC-2026-0381", reason = "webpki-roots 1.0.9 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
+    { id = "RUSTSEC-2026-0382", reason = "rustls-webpki 0.103.13 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
+    { id = "RUSTSEC-2026-0386", reason = "tokio 1.53.1 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
+    { id = "RUSTSEC-2026-0387", reason = "crypto-bigint 0.5.5 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
+    { id = "RUSTSEC-2026-0424", reason = "wasmtime 43.0.2 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
+    { id = "RUSTSEC-2026-0429", reason = "zip 8.6.0 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
+    { id = "RUSTSEC-2026-0459", reason = "libsqlite3-sys 0.30.1 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
+]
+
+[licenses]
+allow = [
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "BSL-1.0",
+    "CC0-1.0",
+    "CDLA-Permissive-2.0",
+    "ISC",
+    "MIT",
+    "MIT-0",
+    "Unicode-3.0",
+    "Zlib",
+]
+confidence-threshold = 0.8
+# Embedding Maestro brings its existing dirs -> dirs-sys -> option-ext edge
+# into Platform. products/maestro/deny.toml allows MPL-2.0. Scope the Platform
+# exception to the option-ext version pinned in rust/Cargo.lock.
+exceptions = [
+    { crate = "option-ext@=0.2.0", allow = ["MPL-2.0"] },
+    # Pinned SMTP encoding dependency; other crates and versions remain gated.
+    { crate = "quoted_printable@=0.5.2", allow = ["0BSD"] },
+]
+
+[licenses.private]
+ignore = true
+
+[bans]
+multiple-versions = "allow"
+# cargo-deny currently reports internal `workspace = true` crates as wildcard
+# dependencies. Keep the check runnable until those workspace inheritance specs
+# are normalized or cargo-deny distinguishes them from external `*` specs.
+#
+# See `cargo deny check bans`; switching this to `deny` currently flags
+# platform-core, platform-core-types, and platform-proto workspace references.
+wildcards = "allow"
+highlight = "all"
+deny = [
+    { crate = "native-tls", reason = "Prefer rustls-backed TLS in Rust services unless explicitly reviewed." },
+    { crate = "openssl", reason = "Prefer rustls-backed TLS in Rust services unless explicitly reviewed." },
+]
+skip = []
+skip-tree = []
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []

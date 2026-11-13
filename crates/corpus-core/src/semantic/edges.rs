@@ -49,13 +49,13 @@
 use crate::error::Error;
 use crate::error::Result;
 use crate::semantic::extract::functions_for;
-use crate::semantic::features::{features_for, is_significant, jaccard, MATCH_TAU};
+use crate::semantic::features::{MATCH_TAU, features_for, is_significant, jaccard};
 use crate::semantic::func_index;
 use crate::semantic::suppress;
 use crate::semantic::triage;
 use crate::similarity::analyzers;
 use crate::similarity::model::{
-    classify_semantic_edge, model_config_digest, MODEL_V1, MODEL_VERSION,
+    MODEL_V1, MODEL_VERSION, classify_semantic_edge, model_config_digest,
 };
 use crate::similarity::receipts::{self, AnalysisReceipt};
 use chrono::Utc;

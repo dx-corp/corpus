@@ -8,7 +8,7 @@
 use anyhow::{Context, Result};
 use std::path::Path;
 use windows_sys::Win32::Security::Cryptography::{
-    CryptProtectData, CryptUnprotectData, CRYPT_INTEGER_BLOB,
+    CRYPT_INTEGER_BLOB, CryptProtectData, CryptUnprotectData,
 };
 
 #[allow(clippy::unnecessary_mut_passed)] // FFI: the signature requires *mut CRYPT_INTEGER_BLOB

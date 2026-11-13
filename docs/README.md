@@ -14,7 +14,7 @@
 | [semantic-similarity-design.md](semantic-similarity-design.md) | Function-level matching design |
 | [hardening-decisions.md](hardening-decisions.md) | mTLS, spool crypto, scanner tiers (research notes) |
 | [detonation-design.md](detonation-design.md) | CAPE adapter design |
-| [openapi.json](openapi.json) | HTTP surface (`GET /api/v1/openapi.json`) |
+| [openapi.toml](openapi.toml) | HTTP surface (`GET /api/v1/openapi.json`) |
 
 Read order for a new engineer: **intent → architecture → invariants → data-model → deploy**.
 

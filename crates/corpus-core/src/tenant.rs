@@ -9,9 +9,9 @@
 //! The well-known [`crate::DEFAULT_TENANT`] (`slug = default`) is seeded
 //! by migration and used when no header is present.
 
+use crate::DEFAULT_TENANT;
 use crate::dto::{TenantCreateRequest, TenantResponse};
 use crate::error::{Error, Result};
-use crate::DEFAULT_TENANT;
 use chrono::{DateTime, Utc};
 use sqlx::PgPool;
 use uuid::Uuid;

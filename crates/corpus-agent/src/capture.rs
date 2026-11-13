@@ -6,7 +6,7 @@
 
 use crate::config::Config;
 use crate::stable_read::{self, StableReadError};
-use crate::state::{states, Candidate, StateDb};
+use crate::state::{Candidate, StateDb, states};
 use crate::uploader::Uploader;
 use anyhow::Result;
 use corpus_core::dto::{AnnounceDisposition, AnnounceRequest, FinalizeRequest, OccurrenceInfo};
@@ -291,7 +291,12 @@ pub async fn process_candidate(rt: &AgentRuntime, cand: &Candidate) -> Result<()
                         return Ok(());
                     }
                     Err(e) => {
-                        return retry_or_fail(&rt.db, &cand, max_attempts, format!("finalize: {e}"))
+                        return retry_or_fail(
+                            &rt.db,
+                            &cand,
+                            max_attempts,
+                            format!("finalize: {e}"),
+                        );
                     }
                 }
             }

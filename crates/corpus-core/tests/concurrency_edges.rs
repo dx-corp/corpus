@@ -14,7 +14,7 @@ use corpus_core::cas::FsCas;
 use corpus_core::dto::{AnnounceRequest, FinalizeRequest, OccurrenceInfo};
 use corpus_core::semantic;
 use corpus_core::similarity::edges;
-use corpus_core::similarity::model::{edge_type, MODEL_VERSION};
+use corpus_core::similarity::model::{MODEL_VERSION, edge_type};
 use corpus_core::similarity::testutil::build_pe;
 use corpus_core::{db, hash, ingest, tenant};
 use std::sync::Arc;
@@ -203,8 +203,7 @@ async fn concurrent_analysis_is_idempotent() {
     .await
     .unwrap();
     assert_eq!(
-        pair_after,
-        edge_counts_before,
+        pair_after, edge_counts_before,
         "retry must not create more pair edges (before types sum {edge_counts_before}, after {pair_after}, total tenant edges {edge_counts_after})"
     );
 
