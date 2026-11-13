@@ -94,7 +94,7 @@ Migrations are ordered under `migrations/`; two files share prefix `0010_`
 |-------|------|
 | `merlin_segment` | accepted JSONL segment identity and its write-maintained `event_count` |
 | `merlin_segment_batch` | one row per accepted batch of a segment: digest, size and accepted count, so a replay is recognized without a row per event |
-| `merlin_observation` | the events of a segment that name an artifact digest (`exe_sha256`, `script_sha256`, `file_sha256` or `sha256`); every other event stays in the endpoint spool |
+| `merlin_observation` | new ingests store events that name an artifact digest (`exe_sha256`, `script_sha256`, `file_sha256` or `sha256`); every other new event stays in the endpoint spool; legacy observations without digests remain stored |
 
 ## Relationships (conceptual)
 
