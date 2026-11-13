@@ -179,4 +179,4 @@ Hunts are executed by the server's durable worker (`hunt_job` claim loop).
 - `docs/hardening-decisions.md` — mTLS, spool crypto, sandbox tiers
 - `docs/semantic-similarity-design.md` — function-level matching
 - `docs/detonation-design.md` — CAPE adapter
-- `docs/openapi.json` — HTTP surface (also at `GET /api/v1/openapi.json`)
+- `docs/openapi.toml` — HTTP surface (also at `GET /api/v1/openapi.json`)

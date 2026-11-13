@@ -48,7 +48,7 @@
 use crate::error::{Error, Result};
 use crate::semantic::edges::SEMANTIC_EXTRACTOR_VERSION;
 use crate::similarity::extract::EXTRACTOR_VERSION;
-use crate::similarity::model::{model_config_digest, MODEL_V1, MODEL_VERSION};
+use crate::similarity::model::{MODEL_V1, MODEL_VERSION, model_config_digest};
 use std::collections::BTreeMap;
 use std::sync::OnceLock;
 

@@ -165,10 +165,12 @@ async fn similarity_pipeline_end_to_end() {
         "near-identical blobs score high, got {}",
         weak.score
     );
-    assert!(weak.evidence["note"]
-        .as_str()
-        .unwrap()
-        .contains("never merges"));
+    assert!(
+        weak.evidence["note"]
+            .as_str()
+            .unwrap()
+            .contains("never merges")
+    );
     let var_d = edges::variants_view(&pool, tenant_id, &sha_d)
         .await
         .unwrap()
@@ -250,10 +252,12 @@ async fn similarity_pipeline_end_to_end() {
     tenant::ensure_tenant(&pool, other, &oslug, "Other")
         .await
         .unwrap();
-    assert!(edges::similar_view(&pool, other, &sha_a)
-        .await
-        .unwrap()
-        .is_none());
+    assert!(
+        edges::similar_view(&pool, other, &sha_a)
+            .await
+            .unwrap()
+            .is_none()
+    );
     let occ_count: i64 =
         sqlx::query_scalar("SELECT count(*) FROM similarity_edge WHERE tenant_id = $1")
             .bind(other)

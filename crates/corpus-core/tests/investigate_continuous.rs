@@ -3,7 +3,7 @@
 
 use corpus_core::cas::FsCas;
 use corpus_core::dto::*;
-use corpus_core::{db, hunts, ingest, intel, investigate, registry, DEFAULT_TENANT};
+use corpus_core::{DEFAULT_TENANT, db, hunts, ingest, intel, investigate, registry};
 use uuid::Uuid;
 
 #[tokio::test]

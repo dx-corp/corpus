@@ -1,6 +1,6 @@
 //! HTTP tests for admin auth and listen-address policy.
 
-use corpus_core::auth::{is_loopback_listen, AuthConfig, MCP_DEV_TOKEN};
+use corpus_core::auth::{AuthConfig, MCP_DEV_TOKEN, is_loopback_listen};
 use std::sync::Mutex;
 
 static ENV_LOCK: Mutex<()> = Mutex::new(());
@@ -50,12 +50,14 @@ fn admin_token_gates_routes() {
     assert!(cfg.check_admin(None).is_err());
     assert!(cfg.check_admin(Some("Bearer wrong")).is_err());
     assert!(cfg.check_admin(Some("Bearer test-admin-secret")).is_ok());
-    assert!(cfg
-        .check_merlin_ingest(Some("Bearer merlin-service-secret"))
-        .is_ok());
-    assert!(cfg
-        .check_merlin_ingest(Some("Bearer test-admin-secret"))
-        .is_ok());
+    assert!(
+        cfg.check_merlin_ingest(Some("Bearer merlin-service-secret"))
+            .is_ok()
+    );
+    assert!(
+        cfg.check_merlin_ingest(Some("Bearer test-admin-secret"))
+            .is_ok()
+    );
     assert!(cfg.check_merlin_ingest(Some("Bearer wrong")).is_err());
 }
 

@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "projection": "corpus",
+  "projectionSchemaVersion": 1,
+  "sourceRepository": "dx-corp/mono",
+  "sourceSha": "bd4d62e09588aadc36dddb9553846a5d043dcb66",
+  "destinationRepository": "dx-corp/corpus",
+  "priorProjectedBase": "42926cb9539da44f211dd7fecb5dd23ed44ce2d2",
+  "definitionDigest": "683df38f1d4ccb2274bff5b7c092a91519808bb1948545c0dfa6223e7cd43cb4",
+  "toolDigest": "bcbcbfc0201d00c537cd53da8b0f8316bc454be3",
+  "contentDigest": "80e26f069bd0fe704c5f1069fa92f01483a4734d7d711abbe2fd52eba5b73deb",
+  "publicationEligible": true
+}

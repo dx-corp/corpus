@@ -14,8 +14,8 @@
 //! Call [`migrate`] once at process start before serving traffic.
 
 use crate::error::Result;
-use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
+use sqlx::postgres::PgPoolOptions;
 use std::{future::Future, time::Duration};
 
 const DATABASE_STARTUP_ATTEMPTS: u32 = 10;

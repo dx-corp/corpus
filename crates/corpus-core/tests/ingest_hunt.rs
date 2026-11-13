@@ -338,9 +338,11 @@ async fn ingest_hunt_and_blast_radius_end_to_end() {
         .await
         .unwrap();
     assert_eq!(by_slug, corpus_core::DEFAULT_TENANT);
-    assert!(tenant::resolve_active_tenant(&pool, Some("no-such-tenant"))
-        .await
-        .is_err());
+    assert!(
+        tenant::resolve_active_tenant(&pool, Some("no-such-tenant"))
+            .await
+            .is_err()
+    );
 
     // --- import two files: one marker carrier, one plain binary
     let (marker_sha, disp) = import_bytes(
@@ -395,9 +397,11 @@ async fn ingest_hunt_and_blast_radius_end_to_end() {
     .fetch_all(&pool)
     .await
     .unwrap();
-    assert!(attempts
-        .iter()
-        .any(|a| a.0 == ingest::OUTCOME_ALREADY_PRESENT));
+    assert!(
+        attempts
+            .iter()
+            .any(|a| a.0 == ingest::OUTCOME_ALREADY_PRESENT)
+    );
     assert_eq!(
         attempts
             .iter()
@@ -552,9 +556,10 @@ async fn ingest_hunt_and_blast_radius_end_to_end() {
     assert_eq!(br.occurrences.len(), 2, "original + dedup-hit occurrence");
     assert_eq!(br.hosts.len(), 1);
     assert_eq!(br.hosts[0].host_name, "test-host");
-    assert!(br
-        .verification_state
-        .contains("historical_observation_only"));
+    assert!(
+        br.verification_state
+            .contains("historical_observation_only")
+    );
 
     let br2 = report::by_sha256(&pool, tenant_id, &fwd_sha, false)
         .await
@@ -570,14 +575,18 @@ async fn ingest_hunt_and_blast_radius_end_to_end() {
         .unwrap();
     assert!(other_br.artifacts.is_empty());
     assert!(other_br.occurrences.is_empty());
-    assert!(registry::list_rules(&pool, other_id)
-        .await
-        .unwrap()
-        .is_empty());
-    assert!(registry::list_bundles(&pool, other_id)
-        .await
-        .unwrap()
-        .is_empty());
+    assert!(
+        registry::list_rules(&pool, other_id)
+            .await
+            .unwrap()
+            .is_empty()
+    );
+    assert!(
+        registry::list_bundles(&pool, other_id)
+            .await
+            .unwrap()
+            .is_empty()
+    );
     assert!(hunts::list_hunts(&pool, other_id).await.unwrap().is_empty());
     // Same SHA-256 is a distinct artifact under a different tenant (CAS keys
     // are tenant-namespaced; dedup is per-tenant).

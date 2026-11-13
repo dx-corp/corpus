@@ -4,7 +4,7 @@
 //! attachment (bearer or mTLS), and mapping of HTTP outcomes to local
 //! queue state transitions. Never invents artifact ids — digests only.
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use corpus_core::dto::*;
 use uuid::Uuid;
 

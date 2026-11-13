@@ -1,0 +1,342 @@
+# Corpus HTTP API (OpenAPI 3). corpus-server serves this as JSON at
+# GET /api/v1/openapi.json; keys keep their order.
+
+openapi = "3.0.3"
+servers = [
+    { url = "http://127.0.0.1:8080" },
+]
+
+[info]
+title = "Corpus API"
+version = "0.1.0"
+description = "Longitudinal executable corpus and retro-hunt control plane. Admin routes require Authorization: Bearer when CORPUS_ADMIN_TOKEN is set or the server binds non-loopback. Agent traffic uses mTLS on CORPUS_AGENT_LISTEN."
+
+[components.securitySchemes.adminBearer]
+type = "http"
+scheme = "bearer"
+description = "CORPUS_ADMIN_TOKEN"
+
+[components.securitySchemes.mcpBearer]
+type = "http"
+scheme = "bearer"
+description = "CORPUS_MCP_TOKEN"
+
+[components.securitySchemes.merlinBearer]
+type = "http"
+scheme = "bearer"
+description = "CORPUS_MERLIN_INGEST_TOKEN; narrow service token for Merlin telemetry"
+
+[components.parameters.Tenant]
+name = "X-Corpus-Tenant"
+in = "header"
+description = "Tenant UUID or slug; defaults to seeded `default`."
+
+[components.parameters.Tenant.schema]
+type = "string"
+
+[paths."/api/v1/health".get]
+summary = "Liveness"
+
+[paths."/api/v1/health".get.responses.200]
+description = "OK"
+
+[paths."/api/v1/health".get.responses.200.content."application/json".schema]
+type = "object"
+
+[paths."/api/v1/health".get.responses.200.content."application/json".schema.properties.status]
+type = "string"
+
+[paths."/api/v1/health".get.responses.200.content."application/json".schema.properties.engine]
+type = "string"
+
+[paths."/api/v1/openapi.json".get]
+summary = "This OpenAPI document"
+
+[paths."/api/v1/openapi.json".get.responses.200]
+description = "OpenAPI 3.0 JSON"
+
+[paths."/api/v1/tenants".get]
+summary = "List tenants"
+security = [
+    { adminBearer = [] },
+]
+
+[paths."/api/v1/tenants".get.responses.200]
+description = "Tenant list"
+
+[paths."/api/v1/tenants".post]
+summary = "Create tenant"
+security = [
+    { adminBearer = [] },
+]
+
+[paths."/api/v1/tenants".post.responses.201]
+description = "Created"
+
+[paths."/api/v1/artifacts/announce".post]
+summary = "Announce artifact (admin or agent bearer)"
+parameters = [
+    { "$ref" = "#/components/parameters/Tenant" },
+]
+
+[paths."/api/v1/artifacts/announce".post.responses.200]
+description = "Announce response"
+
+[paths."/api/v1/artifacts/uploads/{upload_id}".put]
+summary = "Upload staged bytes"
+
+[[paths."/api/v1/artifacts/uploads/{upload_id}".put.parameters]]
+name = "upload_id"
+in = "path"
+required = true
+
+[paths."/api/v1/artifacts/uploads/{upload_id}".put.parameters.schema]
+type = "string"
+format = "uuid"
+
+[paths."/api/v1/artifacts/uploads/{upload_id}".put.responses.204]
+description = "Staged"
+
+[paths."/api/v1/artifacts/finalize".post]
+summary = "Finalize upload into CAS"
+
+[paths."/api/v1/artifacts/finalize".post.responses.200]
+description = "Finalize response"
+
+[paths."/api/v1/integrations/merlin/segments".post]
+summary = "Ingest replay-safe raw Merlin telemetry"
+security = [
+    { merlinBearer = [] },
+    { adminBearer = [] },
+]
+parameters = [
+    { "$ref" = "#/components/parameters/Tenant" },
+]
+
+[paths."/api/v1/integrations/merlin/segments".post.responses.200]
+description = "Delivery receipt with accepted and duplicate event counts"
+
+[paths."/api/v1/integrations/merlin/segments".post.responses.200.content."application/json".schema]
+type = "object"
+required = [
+    "schema_version",
+    "receipt_version",
+    "segment_id",
+    "segment_sha256",
+    "status",
+    "accepted_events",
+    "duplicate_events",
+]
+
+[paths."/api/v1/integrations/merlin/segments".post.responses.200.content."application/json".schema.properties.schema_version]
+type = "integer"
+example = 1
+
+[paths."/api/v1/integrations/merlin/segments".post.responses.200.content."application/json".schema.properties.receipt_version]
+type = "integer"
+example = 1
+
+[paths."/api/v1/integrations/merlin/segments".post.responses.200.content."application/json".schema.properties.segment_id]
+type = "string"
+format = "uuid"
+
+[paths."/api/v1/integrations/merlin/segments".post.responses.200.content."application/json".schema.properties.segment_sha256]
+type = "string"
+pattern = "^[0-9a-f]{64}$"
+
+[paths."/api/v1/integrations/merlin/segments".post.responses.200.content."application/json".schema.properties.status]
+type = "string"
+enum = [
+    "accepted",
+    "duplicate",
+]
+
+[paths."/api/v1/integrations/merlin/segments".post.responses.200.content."application/json".schema.properties.accepted_events]
+type = "integer"
+minimum = 0
+
+[paths."/api/v1/integrations/merlin/segments".post.responses.200.content."application/json".schema.properties.duplicate_events]
+type = "integer"
+minimum = 0
+
+[paths."/api/v1/integrations/merlin/observations".get]
+summary = "List Merlin observations for enrichment"
+security = [
+    { merlinBearer = [] },
+    { adminBearer = [] },
+]
+parameters = [
+    { "$ref" = "#/components/parameters/Tenant" },
+    { name = "host", in = "query", schema = { type = "string" } },
+    { name = "limit", in = "query", schema = { type = "integer", minimum = 1, maximum = 1000 } },
+]
+
+[paths."/api/v1/integrations/merlin/observations".get.responses.200]
+description = "Merlin observation list"
+
+[paths."/api/v1/rules".get]
+summary = "List rules"
+security = [
+    { adminBearer = [] },
+]
+parameters = [
+    { "$ref" = "#/components/parameters/Tenant" },
+]
+
+[paths."/api/v1/rules".get.responses.200]
+description = "Rules"
+
+[paths."/api/v1/rules".post]
+summary = "Create rule"
+security = [
+    { adminBearer = [] },
+]
+
+[paths."/api/v1/rules".post.responses.200]
+description = "Rule"
+
+[paths."/api/v1/bundles".get]
+summary = "List bundles"
+security = [
+    { adminBearer = [] },
+]
+
+[paths."/api/v1/bundles".get.responses.200]
+description = "Bundles"
+
+[paths."/api/v1/bundles".post]
+summary = "Publish immutable bundle"
+security = [
+    { adminBearer = [] },
+]
+
+[paths."/api/v1/bundles".post.responses.200]
+description = "Bundle"
+
+[paths."/api/v1/hunts".get]
+summary = "List hunts"
+security = [
+    { adminBearer = [] },
+]
+
+[paths."/api/v1/hunts".get.responses.200]
+description = "Hunts"
+
+[paths."/api/v1/hunts".post]
+summary = "Create DRAFT retro-hunt"
+security = [
+    { adminBearer = [] },
+]
+
+[paths."/api/v1/hunts".post.responses.200]
+description = "Hunt"
+
+[paths."/api/v1/hunts/{hunt_id}/run".post]
+summary = "Enqueue hunt (async) or run sync with ?sync=1"
+security = [
+    { adminBearer = [] },
+]
+
+[[paths."/api/v1/hunts/{hunt_id}/run".post.parameters]]
+name = "hunt_id"
+in = "path"
+required = true
+
+[paths."/api/v1/hunts/{hunt_id}/run".post.parameters.schema]
+type = "string"
+format = "uuid"
+
+[[paths."/api/v1/hunts/{hunt_id}/run".post.parameters]]
+name = "sync"
+in = "query"
+
+[paths."/api/v1/hunts/{hunt_id}/run".post.parameters.schema]
+type = "string"
+enum = [
+    "1",
+    "true",
+]
+
+[paths."/api/v1/hunts/{hunt_id}/run".post.responses.200]
+description = "Hunt (QUEUED or terminal if sync)"
+
+[paths."/api/v1/reports/blast-radius".get]
+summary = "Blast-radius report"
+security = [
+    { adminBearer = [] },
+]
+parameters = [
+    { name = "hunt_id", in = "query", schema = { type = "string", format = "uuid" } },
+    { name = "sha256", in = "query", schema = { type = "string" } },
+    { name = "expand_variants", in = "query", schema = { type = "boolean" } },
+]
+
+[paths."/api/v1/reports/blast-radius".get.responses.200]
+description = "Report"
+
+[paths."/api/v1/artifacts/{sha256}/detonate".post]
+summary = "Submit sample to external sandbox (egress; off by default)"
+security = [
+    { adminBearer = [] },
+]
+parameters = [
+    { name = "sha256", in = "path", required = true, schema = { type = "string" } },
+]
+
+[paths."/api/v1/artifacts/{sha256}/detonate".post.responses.200]
+description = "Detonation result"
+
+[paths."/api/v1/agents/enroll".post]
+summary = "Exchange one-time enrollment token for agent credentials"
+
+[paths."/api/v1/agents/enroll".post.responses.200]
+description = "Enroll response with client cert"
+
+[paths."/mcp".post]
+summary = "Read-only MCP JSON-RPC"
+security = [
+    { mcpBearer = [] },
+]
+
+[paths."/mcp".post.responses.200]
+description = "JSON-RPC response"
+
+[paths."/api/v1/investigate".get]
+summary = "Campaign investigation report (sha256 or hunt_id)"
+security = [
+    { adminBearer = [] },
+]
+parameters = [
+    { name = "sha256", in = "query", schema = { type = "string" } },
+    { name = "hunt_id", in = "query", schema = { type = "string", format = "uuid" } },
+]
+
+[paths."/api/v1/investigate".get.responses.200]
+description = "InvestigationReport JSON"
+
+[paths."/api/v1/detections".get]
+summary = "Recent autonomous detection events"
+security = [
+    { adminBearer = [] },
+]
+
+[paths."/api/v1/detections".get.responses.200]
+description = "Detection list"
+
+[paths."/api/v1/continuous".get]
+summary = "Continuous re-analysis audit log"
+security = [
+    { adminBearer = [] },
+]
+
+[paths."/api/v1/continuous".get.responses.200]
+description = "Reanalysis records"
+
+[paths."/api/v1/metrics".get]
+summary = "Tenant-scoped platform metrics"
+security = [
+    { adminBearer = [] },
+]
+
+[paths."/api/v1/metrics".get.responses.200]
+description = "PlatformMetrics"
