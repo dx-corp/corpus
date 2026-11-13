@@ -40,10 +40,8 @@ pub fn parse_notify_records(buf: &[u8]) -> Vec<NotifyRecord> {
             break;
         }
         let wide: Vec<u16> = buf[offset + HEADER_LEN..offset + HEADER_LEN + name_len]
-            .as_chunks::<2>()
-            .0
-            .iter()
-            .map(|&c| u16::from_le_bytes(c))
+            .chunks_exact(2)
+            .map(|c| u16::from_le_bytes([c[0], c[1]]))
             .collect();
         out.push(NotifyRecord {
             action,

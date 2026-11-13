@@ -596,10 +596,8 @@ async fn load_functions(pool: &PgPool, tenant: Uuid, artifact: Uuid) -> Result<V
         .map(|r| {
             let token_hashes: Vec<u64> = r
                 .sig
-                .as_chunks::<8>()
-                .0
-                .iter()
-                .map(|&c| u64::from_le_bytes(c))
+                .chunks_exact(8)
+                .map(|c| u64::from_le_bytes(c.try_into().unwrap()))
                 .collect();
             FunctionRow {
                 offset: r.func_offset as u64,

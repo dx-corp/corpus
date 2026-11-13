@@ -107,123 +107,68 @@ pub async fn ingest_segment(
         }
     };
 
-    // A replay of a batch this segment already took is a duplicate as a
-    // whole. Its events are not stored per row, so the batch digest is what
-    // makes the replay recognizable; the segment lock above serializes it.
-    let batch_sha256 = batch_digest(&req.events)?;
-    let replayed: bool = sqlx::query_scalar(
-        "SELECT EXISTS(SELECT 1 FROM merlin_segment_batch
-                       WHERE segment_id = $1 AND batch_sha256 = $2)",
-    )
-    .bind(segment_id)
-    .bind(&batch_sha256)
-    .fetch_one(&mut *tx)
-    .await?;
-    if replayed {
-        tx.commit().await?;
-        return Ok(receipt(segment_id, segment_sha256, 0, req.events.len()));
-    }
-
-    // Every event is still validated and identified. Only the first
-    // occurrence of an event_id in the batch counts, as it did when every
-    // event was a row.
-    let mut first = std::collections::HashSet::with_capacity(req.events.len());
-    let mut fresh = Vec::with_capacity(req.events.len());
+    // One statement per batch: a row-at-a-time loop costs one database
+    // round trip per event, which put 1,000-event batches past the
+    // bridge's request timeout, so every timed-out batch rolled back.
+    let count = req.events.len();
+    let mut ids = Vec::with_capacity(count);
+    let mut event_ids = Vec::with_capacity(count);
+    let mut boot_ids = Vec::with_capacity(count);
+    let mut source_seqs = Vec::with_capacity(count);
+    let mut kinds = Vec::with_capacity(count);
+    let mut process_keys = Vec::with_capacity(count);
+    let mut artifact_sha256s = Vec::with_capacity(count);
+    let mut observed_ats = Vec::with_capacity(count);
     for (index, event) in req.events.iter().enumerate() {
         let identity = event_identity(index, event)?;
-        if first.insert(identity.event_id.clone()) {
-            fresh.push((identity, event));
-        }
+        ids.push(Uuid::new_v4());
+        event_ids.push(identity.event_id);
+        boot_ids.push(identity.boot_id);
+        source_seqs.push(identity.source_seq);
+        kinds.push(identity.kind);
+        process_keys.push(identity.process_key);
+        artifact_sha256s.push(identity.artifact_sha256);
+        observed_ats.push(identity.observed_at);
     }
-    // An event whose id an earlier batch stored is a duplicate, whether or
-    // not this occurrence names an artifact.
-    let fresh_ids: Vec<&str> = fresh.iter().map(|(i, _)| i.event_id.as_str()).collect();
-    let stored: std::collections::HashSet<String> = sqlx::query_scalar(
-        "SELECT event_id FROM merlin_observation
-         WHERE tenant_id = $1 AND host_name = $2 AND event_id = ANY($3)",
+    // ON CONFLICT DO NOTHING also skips a repeat of an event_id within the
+    // same batch, so the first occurrence wins as it did row by row.
+    let accepted_events = sqlx::query(
+        "INSERT INTO merlin_observation
+         (id, tenant_id, segment_id, host_name, segment, event_id, boot_id,
+          source_seq, kind, process_key, artifact_sha256, observed_at,
+          received_at, payload)
+         SELECT e.id, $1, $2, $3, $4, e.event_id, e.boot_id, e.source_seq,
+                e.kind, e.process_key, e.artifact_sha256, e.observed_at,
+                NOW(), e.payload
+         FROM UNNEST($5::uuid[], $6::text[], $7::text[], $8::bigint[],
+                     $9::text[], $10::text[], $11::text[], $12::timestamptz[],
+                     $13::jsonb[])
+              WITH ORDINALITY AS e(id, event_id, boot_id, source_seq, kind,
+                                   process_key, artifact_sha256, observed_at,
+                                   payload, ord)
+         ORDER BY e.ord
+         ON CONFLICT (tenant_id, host_name, event_id) DO NOTHING",
     )
     .bind(tenant_id)
-    .bind(&req.host_name)
-    .bind(&fresh_ids)
-    .fetch_all(&mut *tx)
-    .await?
-    .into_iter()
-    .collect();
-    fresh.retain(|(identity, _)| !stored.contains(&identity.event_id));
-
-    // Only events that name an artifact digest are stored: they are what
-    // correlates with the artifact ledger. One statement per batch.
-    let artifacts: Vec<&(EventIdentity, &serde_json::Value)> = fresh
-        .iter()
-        .filter(|(identity, _)| identity.artifact_sha256.is_some())
-        .collect();
-    if !artifacts.is_empty() {
-        let ids: Vec<Uuid> = artifacts.iter().map(|_| Uuid::new_v4()).collect();
-        let column = |f: fn(&EventIdentity) -> Option<String>| -> Vec<Option<String>> {
-            artifacts.iter().map(|(identity, _)| f(identity)).collect()
-        };
-        let event_ids = column(|i| Some(i.event_id.clone()));
-        let boot_ids = column(|i| Some(i.boot_id.clone()));
-        let kinds = column(|i| Some(i.kind.clone()));
-        let process_keys = column(|i| i.process_key.clone());
-        let artifact_sha256s = column(|i| i.artifact_sha256.clone());
-        let source_seqs: Vec<Option<i64>> = artifacts.iter().map(|(i, _)| i.source_seq).collect();
-        let observed_ats: Vec<Option<chrono::DateTime<chrono::Utc>>> =
-            artifacts.iter().map(|(i, _)| i.observed_at).collect();
-        let payloads: Vec<serde_json::Value> =
-            artifacts.iter().map(|(_, e)| (*e).clone()).collect();
-        sqlx::query(
-            "INSERT INTO merlin_observation
-             (id, tenant_id, segment_id, host_name, segment, event_id, boot_id,
-              source_seq, kind, process_key, artifact_sha256, observed_at,
-              received_at, payload)
-             SELECT e.id, $1, $2, $3, $4, e.event_id, e.boot_id, e.source_seq,
-                    e.kind, e.process_key, e.artifact_sha256, e.observed_at,
-                    NOW(), e.payload
-             FROM UNNEST($5::uuid[], $6::text[], $7::text[], $8::bigint[],
-                         $9::text[], $10::text[], $11::text[], $12::timestamptz[],
-                         $13::jsonb[])
-                  AS e(id, event_id, boot_id, source_seq, kind, process_key,
-                       artifact_sha256, observed_at, payload)
-             ON CONFLICT (tenant_id, host_name, event_id) DO NOTHING",
-        )
-        .bind(tenant_id)
-        .bind(segment_id)
-        .bind(&req.host_name)
-        .bind(&req.segment)
-        .bind(&ids)
-        .bind(&event_ids)
-        .bind(&boot_ids)
-        .bind(&source_seqs)
-        .bind(&kinds)
-        .bind(&process_keys)
-        .bind(&artifact_sha256s)
-        .bind(&observed_ats)
-        .bind(&payloads)
-        .execute(&mut *tx)
-        .await?;
-    }
-    let accepted_events = fresh.len();
-
-    sqlx::query(
-        "INSERT INTO merlin_segment_batch
-         (segment_id, batch_sha256, event_count, accepted_events, received_at)
-         VALUES ($1, $2, $3, $4, NOW())",
-    )
     .bind(segment_id)
-    .bind(&batch_sha256)
-    .bind(
-        i32::try_from(req.events.len())
-            .map_err(|_| Error::BadRequest("Merlin event batch is too large".into()))?,
-    )
-    .bind(
-        i32::try_from(accepted_events)
-            .map_err(|_| Error::BadRequest("Merlin event batch is too large".into()))?,
-    )
+    .bind(&req.host_name)
+    .bind(&req.segment)
+    .bind(&ids)
+    .bind(&event_ids)
+    .bind(&boot_ids)
+    .bind(&source_seqs)
+    .bind(&kinds)
+    .bind(&process_keys)
+    .bind(&artifact_sha256s)
+    .bind(&observed_ats)
+    .bind(&req.events)
     .execute(&mut *tx)
-    .await?;
-    // The segment's count is maintained at write time: it advances by the
-    // events this batch accepted.
+    .await?
+    .rows_affected() as usize;
+
+    // Every observation carrying this segment_id is inserted here, so the
+    // stored count advances by the rows just inserted. Recounting with
+    // COUNT(*) scanned merlin_observation, which has no segment_id index.
     sqlx::query(
         "UPDATE merlin_segment
          SET event_count = event_count + $2
@@ -235,22 +180,7 @@ pub async fn ingest_segment(
     .await?;
     tx.commit().await?;
 
-    Ok(receipt(
-        segment_id,
-        segment_sha256,
-        accepted_events,
-        req.events.len() - accepted_events,
-    ))
-}
-
-/// The receipt for one batch. A batch that accepted nothing is a duplicate.
-fn receipt(
-    segment_id: Uuid,
-    segment_sha256: String,
-    accepted_events: usize,
-    duplicate_events: usize,
-) -> MerlinSegmentResponse {
-    MerlinSegmentResponse {
+    Ok(MerlinSegmentResponse {
         schema_version: MERLIN_SCHEMA_VERSION,
         receipt_version: 1,
         segment_id,
@@ -262,22 +192,8 @@ fn receipt(
         }
         .into(),
         accepted_events,
-        duplicate_events,
-    }
-}
-
-/// SHA-256 over the batch's events in order, each length-prefixed so no two
-/// different batches share a digest.
-fn batch_digest(events: &[serde_json::Value]) -> Result<String> {
-    use sha2::{Digest, Sha256};
-    let mut hasher = Sha256::new();
-    for event in events {
-        let bytes = serde_json::to_vec(event)
-            .map_err(|e| Error::BadRequest(format!("Merlin event is not serializable: {e}")))?;
-        hasher.update((bytes.len() as u64).to_be_bytes());
-        hasher.update(&bytes);
-    }
-    Ok(hex::encode(hasher.finalize()))
+        duplicate_events: req.events.len() - accepted_events,
+    })
 }
 
 pub async fn list_observations(

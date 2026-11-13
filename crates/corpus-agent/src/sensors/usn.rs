@@ -108,10 +108,8 @@ pub fn parse_usn_records(buf: &[u8]) -> Vec<UsnRecord> {
             u16::from_le_bytes(buf[offset + 58..offset + 60].try_into().unwrap()) as usize;
         if name_off + name_len <= record_len {
             let wide: Vec<u16> = buf[offset + name_off..offset + name_off + name_len]
-                .as_chunks::<2>()
-                .0
-                .iter()
-                .map(|&c| u16::from_le_bytes(c))
+                .chunks_exact(2)
+                .map(|c| u16::from_le_bytes([c[0], c[1]]))
                 .collect();
             out.push(UsnRecord {
                 usn,

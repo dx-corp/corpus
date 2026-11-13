@@ -48,7 +48,10 @@ async fn agent_ingest_requires_and_enforces_bearer_identity() {
     let cas = tempfile::tempdir().unwrap();
     let port = free_port();
     let base = format!("http://127.0.0.1:{port}");
-    let child = std::process::Command::new(env!("CARGO_BIN_EXE_corpus-server"))
+    let binary = std::env::var_os("CARGO_BIN_EXE_corpus-server")
+        .or_else(|| option_env!("CARGO_BIN_EXE_corpus-server").map(Into::into))
+        .expect("Cargo must provide the corpus-server integration-test binary");
+    let child = std::process::Command::new(binary)
         .env("DATABASE_URL", &url)
         .env("CORPUS_CAS_ROOT", cas.path())
         .env("CORPUS_LISTEN", format!("127.0.0.1:{port}"))

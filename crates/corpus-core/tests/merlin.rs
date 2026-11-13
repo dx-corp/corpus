@@ -32,7 +32,6 @@ async fn merlin_segment_ingest_is_idempotent_and_rejects_digest_conflicts() {
                 "event_id": "boot-a:1",
                 "kind": "exec",
                 "process_key": "boot-a:42:9",
-                "exe_sha256": "E".repeat(64),
                 "ts": 1_722_744_003.25,
             }),
             serde_json::json!({
@@ -67,15 +66,9 @@ async fn merlin_segment_ingest_is_idempotent_and_rejects_digest_conflicts() {
     let observations = merlin::list_observations(&pool, tenant_id, Some("merlin-test-host"), 100)
         .await
         .unwrap();
-    // Only the event that names an artifact is stored; the connect event
-    // stays in the endpoint spool.
-    assert_eq!(observations.len(), 1);
+    assert_eq!(observations.len(), 2);
     assert_eq!(observations[0].host_name, "merlin-test-host");
-    assert_eq!(observations[0].payload["kind"], "exec");
-    assert_eq!(
-        observations[0].artifact_sha256.as_deref(),
-        Some("e".repeat(64).as_str())
-    );
+    assert_eq!(observations[0].payload["kind"], "connect");
 
     let mut conflict = req.clone();
     conflict.segment_sha256 = "B".repeat(64);
@@ -174,93 +167,4 @@ async fn merlin_full_batch_is_one_receipt_with_in_batch_duplicates_and_counts() 
         Some("c".repeat(64).as_str())
     );
     assert!(observations[0].observed_at.is_some());
-}
-
-#[tokio::test]
-async fn merlin_stores_only_artifact_events_and_counts_every_event_once() {
-    let Ok(url) = std::env::var("CORPUS_TEST_DATABASE_URL") else {
-        eprintln!("CORPUS_TEST_DATABASE_URL unset; skipping Merlin integration test");
-        return;
-    };
-    let pool = db::connect(&url).await.unwrap();
-    db::migrate(&pool).await.unwrap();
-    let tenant_id = Uuid::new_v4();
-    let slug = format!("merlin-{}", &tenant_id.simple().to_string()[..8]);
-    tenant::ensure_tenant(&pool, tenant_id, &slug, "Merlin artifact-only test")
-        .await
-        .unwrap();
-    let event = |seq: i64, artifact: bool| {
-        let mut event = serde_json::json!({
-            "boot_id": "boot-m",
-            "source_seq": seq,
-            "kind": if artifact { "exec" } else { "connect" },
-            "ts": 1_722_744_000.0 + seq as f64,
-        });
-        if artifact {
-            event["sha256"] = serde_json::json!("A".repeat(64));
-        }
-        event
-    };
-    let batch = |events: Vec<serde_json::Value>| MerlinSegmentRequest {
-        schema_version: 1,
-        host_name: "merlin-mixed-host".into(),
-        segment: "merlin-events.20261112-000000.jsonl.gz".into(),
-        segment_sha256: "f".repeat(64),
-        events,
-    };
-    let counts = |segment_id: Uuid| {
-        let pool = pool.clone();
-        async move {
-            sqlx::query_as::<_, (i64, i64, i64)>(
-                "SELECT s.event_count,
-                        (SELECT COUNT(*) FROM merlin_observation o WHERE o.segment_id = s.id),
-                        (SELECT COUNT(*) FROM merlin_segment_batch b WHERE b.segment_id = s.id)
-                 FROM merlin_segment s WHERE s.id = $1",
-            )
-            .bind(segment_id)
-            .fetch_one(&pool)
-            .await
-            .unwrap()
-        }
-    };
-
-    // Three events, one artifact, and an in-batch repeat of a raw event.
-    let first = batch(vec![
-        event(1, true),
-        event(2, false),
-        event(3, false),
-        event(2, false),
-    ]);
-    let taken = merlin::ingest_segment(&pool, tenant_id, &first)
-        .await
-        .unwrap();
-    assert_eq!((taken.accepted_events, taken.duplicate_events), (3, 1));
-    assert_eq!(taken.status, "accepted");
-    assert_eq!(counts(taken.segment_id).await, (3, 1, 1));
-
-    // The exact batch again is a duplicate as a whole and writes nothing.
-    let replay = merlin::ingest_segment(&pool, tenant_id, &first)
-        .await
-        .unwrap();
-    assert_eq!((replay.accepted_events, replay.duplicate_events), (0, 4));
-    assert_eq!(replay.status, "duplicate");
-    assert_eq!(counts(taken.segment_id).await, (3, 1, 1));
-
-    // A later batch repeating the stored artifact event is a duplicate for
-    // that event, even when the repeat names no artifact.
-    let mut repeat = event(1, false);
-    repeat["kind"] = serde_json::json!("repeat");
-    let second = batch(vec![repeat, event(4, false)]);
-    let next = merlin::ingest_segment(&pool, tenant_id, &second)
-        .await
-        .unwrap();
-    assert_eq!((next.accepted_events, next.duplicate_events), (1, 1));
-    assert_eq!(counts(taken.segment_id).await, (4, 1, 2));
-
-    let stored = merlin::list_observations(&pool, tenant_id, Some("merlin-mixed-host"), 100)
-        .await
-        .unwrap();
-    assert_eq!(stored.len(), 1);
-    assert_eq!(stored[0].event_id, "boot-m:1");
-    assert_eq!(stored[0].kind, "exec");
 }
