@@ -91,8 +91,10 @@ async fn health() -> Json<serde_json::Value> {
     Json(serde_json::json!({"status": "ok", "engine": corpus_core::ENGINE_VERSION}))
 }
 
+const OPENAPI_TOML: &str = include_str!("../../../docs/openapi.toml");
+
 async fn openapi_spec() -> Json<serde_json::Value> {
-    Json(serde_json::from_str(include_str!("../../../docs/openapi.json")).unwrap_or_else(|_| {
+    Json(toml::from_str(OPENAPI_TOML).unwrap_or_else(|_| {
         serde_json::json!({"openapi": "3.0.3", "info": {"title": "Corpus API", "version": "0.1.0"}})
     }))
 }
@@ -1677,4 +1679,19 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!(%listen, "corpus-server listening");
     axum::serve(listener, app).await?;
     Ok(())
+}
+
+#[cfg(test)]
+mod openapi_tests {
+    #[test]
+    fn served_spec_parses_from_toml() {
+        let spec: serde_json::Value =
+            toml::from_str(super::OPENAPI_TOML).expect("docs/openapi.toml parses");
+        assert_eq!(spec["openapi"], "3.0.3");
+        assert!(
+            spec["paths"]
+                .as_object()
+                .is_some_and(|paths| !paths.is_empty())
+        );
+    }
 }

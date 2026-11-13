@@ -24,10 +24,10 @@
 
 use crate::cas::FsCas;
 use crate::error::Result;
-use crate::similarity::extract::{self, ExtractedFeatures, EXTRACTOR_VERSION};
+use crate::similarity::extract::{self, EXTRACTOR_VERSION, ExtractedFeatures};
 use crate::similarity::fuzzy;
 use crate::similarity::lsh;
-use crate::similarity::model::{edge_type, merges_groups, MODEL_V1, MODEL_VERSION};
+use crate::similarity::model::{MODEL_V1, MODEL_VERSION, edge_type, merges_groups};
 use chrono::Utc;
 use sqlx::PgPool;
 use uuid::Uuid;

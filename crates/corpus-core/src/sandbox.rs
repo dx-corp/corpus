@@ -165,7 +165,7 @@ pub async fn run_sandboxed(
 #[cfg(target_os = "linux")]
 fn apply_landlock(sample_dir: &Path) -> std::io::Result<()> {
     use landlock::{
-        Access, AccessFs, CompatLevel, Compatible, Ruleset, RulesetAttr, RulesetCreatedAttr, ABI,
+        ABI, Access, AccessFs, CompatLevel, Compatible, Ruleset, RulesetAttr, RulesetCreatedAttr,
     };
     let abi = ABI::V1;
     let paths = vec![

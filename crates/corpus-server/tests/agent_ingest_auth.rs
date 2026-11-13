@@ -1,7 +1,7 @@
 //! HTTP tests for agent credential requirements on ingest routes.
 
 use corpus_core::dto::*;
-use corpus_core::{db, DEFAULT_TENANT};
+use corpus_core::{DEFAULT_TENANT, db};
 use uuid::Uuid;
 
 struct ChildGuard(std::process::Child);

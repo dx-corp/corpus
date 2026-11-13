@@ -5,7 +5,7 @@
 //! process restarts by persisting completed directory watermarks in
 //! local state.
 
-use crate::state::{priority, StateDb};
+use crate::state::{StateDb, priority};
 use anyhow::Result;
 use std::path::Path;
 

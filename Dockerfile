@@ -6,7 +6,7 @@ WORKDIR /src
 COPY Cargo.toml Cargo.lock ./
 COPY crates ./crates
 COPY migrations ./migrations
-COPY docs/openapi.json ./docs/openapi.json
+COPY docs/openapi.toml ./docs/openapi.toml
 
 RUN cargo build --locked --release -p corpus-server -p corpus-scanner
 

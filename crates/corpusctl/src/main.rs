@@ -15,7 +15,7 @@
 //! Authentication uses the admin secret (and optional tenant header).
 //! Prefer this tool for scripted ops; the agent binary is for endpoints.
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use clap::{Parser, Subcommand};
 use corpus_core::classify;
 use corpus_core::dto::*;
@@ -710,7 +710,9 @@ async fn cmd_import_oci(
             }
         }
     }
-    println!("oci import complete: {captured} captured, {dedup} already present, {too_large} too large, {skipped} non-code skipped");
+    println!(
+        "oci import complete: {captured} captured, {dedup} already present, {too_large} too large, {skipped} non-code skipped"
+    );
     Ok(())
 }
 
@@ -941,7 +943,9 @@ async fn main() -> Result<()> {
         Cmd::Intel { cmd } => match cmd {
             IntelCmd::Malwarebazaar { limit, url } => {
                 let api = url.unwrap_or_else(|| corpus_core::intel::MB_API_URL.to_string());
-                eprintln!("WARNING: MalwareBazaar samples are LIVE MALWARE. They are committed to the CAS with scope=intel and must never be executed.");
+                eprintln!(
+                    "WARNING: MalwareBazaar samples are LIVE MALWARE. They are committed to the CAS with scope=intel and must never be executed."
+                );
                 let hashes = corpus_core::intel::mb_recent_hashes(&api, limit).await?;
                 println!("{} samples listed", hashes.len());
                 let mut imported = 0usize;
@@ -957,7 +961,9 @@ async fn main() -> Result<()> {
                         imported += 1;
                     }
                 }
-                println!("malwarebazaar import complete: {imported} files, scope=intel, no host occurrences");
+                println!(
+                    "malwarebazaar import complete: {imported} files, scope=intel, no host occurrences"
+                );
             }
             IntelCmd::Taxii {
                 url,
@@ -1212,10 +1218,14 @@ async fn main() -> Result<()> {
             } => {
                 let path = match (hunt, &sha256) {
                     (Some(id), None) => {
-                        format!("/api/v1/reports/blast-radius?hunt_id={id}&expand_variants={expand_variants}")
+                        format!(
+                            "/api/v1/reports/blast-radius?hunt_id={id}&expand_variants={expand_variants}"
+                        )
                     }
                     (None, Some(sha)) => {
-                        format!("/api/v1/reports/blast-radius?sha256={sha}&expand_variants={expand_variants}")
+                        format!(
+                            "/api/v1/reports/blast-radius?sha256={sha}&expand_variants={expand_variants}"
+                        )
                     }
                     _ => bail!("provide exactly one of --hunt or --sha256"),
                 };
@@ -1633,7 +1643,14 @@ async fn main() -> Result<()> {
 fn print_hunt(h: &HuntResponse) {
     println!(
         "hunt {} state={} watermark={:?} planned={} scanned={} cache_hits={} matched={} timed_out={} failed={}",
-        h.id, h.state, h.corpus_watermark, h.planned_artifacts, h.scanned, h.cache_hits,
-        h.matched, h.timed_out, h.failed
+        h.id,
+        h.state,
+        h.corpus_watermark,
+        h.planned_artifacts,
+        h.scanned,
+        h.cache_hits,
+        h.matched,
+        h.timed_out,
+        h.failed
     );
 }

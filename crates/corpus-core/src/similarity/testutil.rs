@@ -40,10 +40,10 @@ pub fn build_pe(dll: &str, func: &str, body: &[u8], checksum: u32, cert: Option<
     w32(&mut b, opt + 64, checksum); // CheckSum (excluded from authentihash)
     w16(&mut b, opt + 68, 3); // subsystem console
     w32(&mut b, opt + 92, 16); // number of rva and sizes
-                               // Data directories at opt+96: [1] import, [4] certificate.
+    // Data directories at opt+96: [1] import, [4] certificate.
     w32(&mut b, opt + 96 + 8, 0x1000); // import RVA
     w32(&mut b, opt + 96 + 12, 0x28); // import size
-                                      // Section header at opt+0xe0.
+    // Section header at opt+0xe0.
     let sh = opt + 0xe0;
     b[sh..sh + 5].copy_from_slice(b".text");
     w32(&mut b, sh + 8, 0x200); // virtual size
@@ -57,7 +57,7 @@ pub fn build_pe(dll: &str, func: &str, body: &[u8], checksum: u32, cert: Option<
     w32(&mut b, raw, 0x1040); // OriginalFirstThunk (ILT RVA)
     w32(&mut b, raw + 12, 0x1060); // Name RVA
     w32(&mut b, raw + 16, 0x1080); // FirstThunk (IAT RVA)
-                                   // ILT at RVA 0x1040 -> raw 0x240; IAT at 0x1080 -> raw 0x280.
+    // ILT at RVA 0x1040 -> raw 0x240; IAT at 0x1080 -> raw 0x280.
     w32(&mut b, raw + 0x40, 0x10a0); // hint/name RVA
     w32(&mut b, raw + 0x80, 0x10a0);
     // DLL name at RVA 0x1060 -> raw 0x260.

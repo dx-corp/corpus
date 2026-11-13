@@ -96,7 +96,7 @@ Start at **[docs/README.md](docs/README.md)** (read order: intent → architectu
 | [docs/runbooks.md](docs/runbooks.md) | Operator procedures |
 | [docs/adrs/](docs/adrs/) | Architecture decision records |
 | [docs/deploy.md](docs/deploy.md) | Env vars, auth policy, first hunt, gVisor, reverse proxy |
-| [docs/openapi.json](docs/openapi.json) | HTTP API (`GET /api/v1/openapi.json`) |
+| [docs/openapi.toml](docs/openapi.toml) | HTTP API (`GET /api/v1/openapi.json`) |
 | [docs/hardening-decisions.md](docs/hardening-decisions.md) | mTLS, spool crypto, sandbox research |
 | [docs/semantic-similarity-design.md](docs/semantic-similarity-design.md) | Function-level matching |
 | [docs/detonation-design.md](docs/detonation-design.md) | CAPE adapter |

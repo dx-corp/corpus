@@ -15,7 +15,7 @@
 //! These tests run hermetically in CI (`cargo test`) without a database.
 
 use crate::classify;
-use crate::semantic::extract::{functions_for, MAX_FUNCTIONS};
+use crate::semantic::extract::{MAX_FUNCTIONS, functions_for};
 use crate::similarity::extract::extract;
 
 /// Resource bounds asserted by the contract suite.

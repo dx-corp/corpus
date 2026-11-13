@@ -327,9 +327,10 @@ mod tests {
         assert_eq!(iocs.len(), 2);
         assert!(iocs.iter().any(|i| i.ioc_type == "sha256"
             && i.value == "aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899"));
-        assert!(iocs
-            .iter()
-            .any(|i| i.ioc_type == "md5" && i.value == "44d88612fea8a8f36de82e1278abb02f"));
+        assert!(
+            iocs.iter()
+                .any(|i| i.ioc_type == "md5" && i.value == "44d88612fea8a8f36de82e1278abb02f")
+        );
     }
 
     #[test]
