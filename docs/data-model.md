@@ -92,8 +92,9 @@ Migrations are ordered under `migrations/`; two files share prefix `0010_`
 
 | Table | Role |
 |-------|------|
-| `merlin_segment` | accepted JSONL segment identity |
-| `merlin_observation` | events within a segment |
+| `merlin_segment` | accepted JSONL segment identity and its write-maintained `event_count` |
+| `merlin_segment_batch` | one row per accepted batch of a segment: digest, size and accepted count, so a replay is recognized without a row per event |
+| `merlin_observation` | new ingests store events that name an artifact digest (`exe_sha256`, `script_sha256`, `file_sha256` or `sha256`); every other new event stays in the endpoint spool; legacy observations without digests remain stored |
 
 ## Relationships (conceptual)
 
@@ -108,7 +109,8 @@ tenant
   ├── rule ── rule_bundle ── hunt ── hunt_match
   ├── agent ── enrollment_token
   ├── intel_indicator
-  └── merlin_segment ── merlin_observation
+  └── merlin_segment ─┬─ merlin_segment_batch
+                     └─ merlin_observation (artifact-bearing events only)
 ```
 
 CAS: `object_key = objects/{tenant_id}/{sha256_hex}` → file bytes. The DB
