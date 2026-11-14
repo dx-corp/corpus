@@ -17,21 +17,24 @@
 
 /// C source for the "base" program: several non-trivial functions that
 /// hold structural shape across optimization levels.
+/// Volatile working state keeps observable loop reads and writes in the
+/// compiled fixture while the surrounding code still uses the requested
+/// optimization level. Unsigned checksum arithmetic wraps without C undefined behavior.
 pub const BASE_SOURCE: &str = r#"
 #include <string.h>
-static __attribute__((noinline)) int checksum(const char *s) {
-    int h = 5381;
+static __attribute__((noinline)) unsigned checksum(const char *volatile s) {
+    volatile unsigned h = 5381;
     while (*s) { h = h * 33 ^ *s++; }
     return h;
 }
-static __attribute__((noinline)) int collatz(int n) {
-    int steps = 0;
+static __attribute__((noinline)) int collatz(volatile int n) {
+    volatile int steps = 0;
     while (n != 1) { n = (n % 2) ? 3 * n + 1 : n / 2; steps++; }
     return steps;
 }
-static __attribute__((noinline)) unsigned fib(int n) {
-    unsigned a = 0, b = 1;
-    for (int i = 0; i < n; i++) { unsigned t = a + b; a = b; b = t; }
+static __attribute__((noinline)) unsigned fib(volatile int n) {
+    volatile unsigned a = 0, b = 1;
+    for (volatile int i = 0; i < n; i++) { volatile unsigned t = a + b; a = b; b = t; }
     return a;
 }
 int main(int argc, char **argv) {
@@ -40,21 +43,22 @@ int main(int argc, char **argv) {
 "#;
 
 /// Same program with a small source tweak (one function changed).
+/// Uses the base fixture's same observable working state.
 pub const TWEAK_SOURCE: &str = r#"
 #include <string.h>
-static __attribute__((noinline)) int checksum(const char *s) {
-    int h = 5381;
+static __attribute__((noinline)) unsigned checksum(const char *volatile s) {
+    volatile unsigned h = 5381;
     while (*s) { h = h * 33 ^ *s++; }
     return h;
 }
-static __attribute__((noinline)) int collatz(int n) {
-    int steps = 0;
+static __attribute__((noinline)) int collatz(volatile int n) {
+    volatile int steps = 0;
     while (n != 1) { n = (n % 2) ? 3 * n + 1 : n / 2; steps++; }
     return steps;
 }
-static __attribute__((noinline)) unsigned fib(int n) {
-    unsigned a = 1, b = 1;
-    for (int i = 0; i < n; i++) { unsigned t = a * b + a; a = b; b = t % 97; }
+static __attribute__((noinline)) unsigned fib(volatile int n) {
+    volatile unsigned a = 1, b = 1;
+    for (volatile int i = 0; i < n; i++) { volatile unsigned t = a * b + a; a = b; b = t % 97; }
     return a;
 }
 int main(int argc, char **argv) {
