@@ -526,10 +526,10 @@ mod tests {
         let sample = dir.path().join("sample.bin");
         std::fs::write(&sample, b"payload CORPUS_SANDBOX_MARKER tail").unwrap();
         let scanner = scanner_binary();
-        if !scanner.exists() {
-            eprintln!("corpus-scanner binary not built; skipping");
-            return;
-        }
+        assert!(
+            scanner.is_file(),
+            "corpus-scanner binary is required; run cargo build -p corpus-scanner --bin corpus-scanner or set CORPUS_SCANNER_BIN to its absolute path"
+        );
         let outcome = scan_subprocess(
             &[("default".into(), RULE.into())],
             &sample,
@@ -550,10 +550,10 @@ mod tests {
         let sample = dir.path().join("sample.bin");
         std::fs::write(&sample, b"x").unwrap();
         let scanner = scanner_binary();
-        if !scanner.exists() {
-            eprintln!("corpus-scanner binary not built; skipping");
-            return;
-        }
+        assert!(
+            scanner.is_file(),
+            "corpus-scanner binary is required; run cargo build -p corpus-scanner --bin corpus-scanner or set CORPUS_SCANNER_BIN to its absolute path"
+        );
         let job = serde_json::json!({
             "rules": [["default", RULE]],
             "sample_path": sample,
