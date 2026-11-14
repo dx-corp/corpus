@@ -132,7 +132,7 @@ async fn semantic_opt_level_invariance_and_tweak() {
             sim_o0
                 .edges
                 .iter()
-                .map(|e| (e.edge_type.clone(), e.score))
+                .map(|e| (&e.other_sha256, &e.edge_type, e.score, &e.evidence))
                 .collect::<Vec<_>>()
         );
     };
@@ -144,6 +144,31 @@ async fn semantic_opt_level_invariance_and_tweak() {
         strong.evidence["top_pairs"].as_array().unwrap().len() >= 2,
         "top function pairs in evidence"
     );
+    // ELF extraction retains symbol names; Mach-O currently exposes unnamed spans.
+    #[cfg(target_os = "linux")]
+    {
+        let pair_evidence = corpus_core::semantic::edges::function_pair_evidence(
+            &pool,
+            tenant_id,
+            sim_o0.artifact_id,
+            strong.other_artifact,
+            64,
+            1,
+        )
+        .await
+        .unwrap();
+        let pairs = pair_evidence["pairs"].as_array().unwrap();
+        for name in ["checksum", "collatz", "fib"] {
+            assert!(
+                pairs.iter().any(|pair| {
+                    pair["a"]["name"].as_str() == Some(name)
+                        && pair["b"]["name"].as_str() == Some(name)
+                }),
+                "O0/O2 must match the corresponding {name} functions: {pair_evidence}"
+            );
+        }
+        eprintln!("O0/O2 corresponding function evidence: {pair_evidence}");
+    }
 
     let var = edges::variants_view(&pool, tenant_id, &shas["base_O0"])
         .await
@@ -168,7 +193,7 @@ async fn semantic_opt_level_invariance_and_tweak() {
             sim_o0
                 .edges
                 .iter()
-                .map(|e| (e.edge_type.clone(), e.score))
+                .map(|e| (&e.other_sha256, &e.edge_type, e.score, &e.evidence))
                 .collect::<Vec<_>>()
         );
     };
