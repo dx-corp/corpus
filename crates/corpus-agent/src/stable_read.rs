@@ -265,25 +265,25 @@ mod tests {
         let spool = tempfile::tempdir().unwrap();
         let target = dir.path().join("mut.bin");
         std::fs::write(&target, b"version one of the file").unwrap();
-        let t2 = target.clone();
+        let calls = std::cell::Cell::new(0usize);
         // Every attempt mutates: retries must exhaust to CHANGED_DURING_READ.
+        // Each hook writes a strictly longer file than the last, so the
+        // re-stat sees a size change on every attempt regardless of the
+        // filesystem's timestamp resolution.
         let err = stable_read(
             &target,
             spool.path(),
             1 << 20,
             1 << 20,
             2,
-            Some(&move || {
-                // Windows filesystem timestamps have ~10-15ms granularity:
-                // a content-identical rewrite inside the same tick is
-                // undetectable by (size, mtime) alone. Cross the tick.
-                #[cfg(windows)]
-                std::thread::sleep(std::time::Duration::from_millis(30));
-                std::fs::write(&t2, b"version two of the file!!").unwrap();
+            Some(&|| {
+                calls.set(calls.get() + 1);
+                std::fs::write(&target, vec![b'x'; 32 + calls.get()]).unwrap();
             }),
             None,
         )
         .unwrap_err();
+        assert_eq!(calls.get(), 3, "one hook call per attempt: the first read plus two retries");
         assert_eq!(err, StableReadError::ChangedDuringRead);
         // Partial spool copies must be discarded.
         assert_eq!(std::fs::read_dir(spool.path()).unwrap().count(), 0);
@@ -342,26 +342,24 @@ mod tests {
         let spool = tempfile::tempdir().unwrap();
         let target = dir.path().join("grow.bin");
         std::fs::write(&target, b"short").unwrap();
-        let t2 = target.clone();
+        let calls = std::cell::Cell::new(0usize);
         let err = stable_read(
             &target,
             spool.path(),
             1 << 20,
             1 << 20,
             1,
-            Some(&move || {
-                // The retry after the first detected mutation rewrites
-                // IDENTICAL content; on Windows (~10-15ms timestamp
-                // granularity) that rewrite is only detectable if it
-                // crosses an mtime tick, so cross it.
-                #[cfg(windows)]
-                std::thread::sleep(std::time::Duration::from_millis(30));
-                std::fs::write(&t2, b"short but now much longer").unwrap();
+            Some(&|| {
+                // Grow the file on every attempt, by a different length each
+                // time, so the mutation is visible to the size check alone.
+                calls.set(calls.get() + 1);
+                std::fs::write(&target, vec![b'y'; 32 + calls.get()]).unwrap();
             }),
             None,
         )
         .unwrap_err();
         assert_eq!(err, StableReadError::ChangedDuringRead);
+        assert_eq!(calls.get(), 2, "one hook call per attempt: the first read plus one retry");
     }
 
     #[test]
