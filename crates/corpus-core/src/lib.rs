@@ -46,6 +46,7 @@ pub mod detonate;
 pub mod dto;
 pub mod error;
 pub mod hash;
+pub mod http;
 pub mod hunts;
 pub mod ingest;
 pub mod intel;

@@ -283,7 +283,11 @@ mod tests {
             None,
         )
         .unwrap_err();
-        assert_eq!(calls.get(), 3, "one hook call per attempt: the first read plus two retries");
+        assert_eq!(
+            calls.get(),
+            3,
+            "one hook call per attempt: the first read plus two retries"
+        );
         assert_eq!(err, StableReadError::ChangedDuringRead);
         // Partial spool copies must be discarded.
         assert_eq!(std::fs::read_dir(spool.path()).unwrap().count(), 0);
@@ -359,7 +363,11 @@ mod tests {
         )
         .unwrap_err();
         assert_eq!(err, StableReadError::ChangedDuringRead);
-        assert_eq!(calls.get(), 2, "one hook call per attempt: the first read plus one retry");
+        assert_eq!(
+            calls.get(),
+            2,
+            "one hook call per attempt: the first read plus one retry"
+        );
     }
 
     #[test]

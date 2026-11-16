@@ -19,7 +19,7 @@ impl Uploader {
     #[allow(dead_code)]
     pub fn new(base: &str, token: &str) -> Self {
         Uploader {
-            http: reqwest::Client::new(),
+            http: corpus_core::http::client(),
             base: base.trim_end_matches('/').to_string(),
             token: token.to_string(),
         }
@@ -31,7 +31,7 @@ impl Uploader {
         let identity = reqwest::Identity::from_pem(format!("{cert_pem}\n{key_pem}").as_bytes())
             .context("loading client identity")?;
         let ca = reqwest::Certificate::from_pem(ca_pem.as_bytes()).context("loading CA root")?;
-        let http = reqwest::Client::builder()
+        let http = corpus_core::http::client_builder()
             .identity(identity)
             .add_root_certificate(ca)
             .build()
@@ -73,6 +73,7 @@ impl Uploader {
                 reqwest::Method::PUT,
                 &format!("/api/v1/artifacts/uploads/{upload_id}"),
             )
+            .timeout(corpus_core::http::ARTIFACT_REQUEST_TIMEOUT)
             .body(bytes)
             .send()
             .await?;
@@ -123,7 +124,7 @@ impl Uploader {
 
     /// Enrollment is unauthenticated except for the one-time token.
     pub async fn enroll(base: &str, req: &EnrollRequest) -> Result<EnrollResponse> {
-        let http = reqwest::Client::new();
+        let http = corpus_core::http::client();
         let resp = http
             .post(format!(
                 "{}/api/v1/agents/enroll",

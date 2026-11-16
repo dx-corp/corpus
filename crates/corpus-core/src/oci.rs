@@ -79,8 +79,21 @@ fn registry_scheme(registry: &str) -> &'static str {
     }
 }
 
+fn blob_redirect_policy() -> reqwest::redirect::Policy {
+    reqwest::redirect::Policy::custom(|attempt| {
+        if attempt.url().scheme() != "https"
+            && attempt.previous().iter().any(|url| url.scheme() == "https")
+        {
+            attempt.error("registry blob redirect would downgrade HTTPS")
+        } else {
+            reqwest::redirect::Policy::limited(5).redirect(attempt)
+        }
+    })
+}
+
 pub struct RegistryClient {
     http: reqwest::Client,
+    blob_http: reqwest::Client,
     registry: String,
     token: Option<String>,
 }
@@ -102,7 +115,15 @@ impl RegistryClient {
         iref: &ImageRef,
         creds: Option<(String, String)>,
     ) -> Result<RegistryClient> {
-        let http = reqwest::Client::new();
+        let http = crate::http::client();
+        // Registries redirect layer GETs to storage/CDNs. Keep that permission
+        // off token and manifest requests, which use `http` above.
+        let blob_http = crate::http::client_builder()
+            .timeout(crate::http::ARTIFACT_REQUEST_TIMEOUT)
+            .referer(false)
+            .redirect(blob_redirect_policy())
+            .build()
+            .map_err(|e| Error::BadRequest(format!("registry blob client: {e}")))?;
         let realm = if iref.registry == "registry-1.docker.io" {
             "https://auth.docker.io/token".to_string()
         } else {
@@ -136,6 +157,7 @@ impl RegistryClient {
         };
         Ok(RegistryClient {
             http,
+            blob_http,
             registry: iref.registry.clone(),
             token,
         })
@@ -187,7 +209,7 @@ impl RegistryClient {
         let scheme = registry_scheme(&self.registry);
         let url = format!("{scheme}://{}/v2/{}/blobs/{}", self.registry, repo, digest);
         let resp = self
-            .auth(self.http.get(&url))
+            .auth(self.blob_http.get(&url))
             .send()
             .await
             .map_err(|e| Error::BadRequest(format!("blob fetch: {e}")))?;
@@ -424,6 +446,97 @@ pub fn file_provenance(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    use tokio::net::TcpListener;
+
+    async fn respond(listener: &TcpListener, response: &str) -> String {
+        let (mut stream, _) = listener.accept().await.unwrap();
+        let mut request = Vec::new();
+        while !request.windows(4).any(|bytes| bytes == b"\r\n\r\n") {
+            let mut chunk = [0; 4096];
+            let size = stream.read(&mut chunk).await.unwrap();
+            assert_ne!(size, 0, "incomplete fixture request");
+            request.extend_from_slice(&chunk[..size]);
+        }
+        stream.write_all(response.as_bytes()).await.unwrap();
+        String::from_utf8(request).unwrap()
+    }
+
+    #[tokio::test]
+    async fn blob_redirects_reach_cdn_without_registry_credentials() {
+        let registry = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let cdn = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let iref =
+            parse_image_ref(&format!("{}/demo:latest", registry.local_addr().unwrap())).unwrap();
+        let cdn_url = format!("http://{}/layer", cdn.local_addr().unwrap());
+        let registry_server = tokio::spawn(async move {
+            let token = r#"{"token":"fixture-registry-token"}"#;
+            let request = respond(
+                &registry,
+                &format!(
+                    "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{token}",
+                    token.len()
+                ),
+            )
+            .await;
+            assert!(request.starts_with("GET /token?"));
+            let redirect = format!(
+                "HTTP/1.1 307 Temporary Redirect\r\nLocation: {cdn_url}\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+            );
+            let manifest = respond(&registry, &redirect).await;
+            assert!(manifest.starts_with("GET /v2/demo/manifests/latest "));
+            let blob = respond(&registry, &redirect).await;
+            assert!(blob.starts_with("GET /v2/demo/blobs/sha256:fixture "));
+            assert!(
+                blob.to_ascii_lowercase()
+                    .contains("authorization: bearer fixture-registry-token")
+            );
+        });
+        let cdn_server = tokio::spawn(async move {
+            let request = respond(
+                &cdn,
+                "HTTP/1.1 200 OK\r\nContent-Length: 5\r\nConnection: close\r\n\r\nlayer",
+            )
+            .await;
+            assert!(request.starts_with("GET /layer "));
+            assert!(!request.to_ascii_lowercase().contains("authorization:"));
+        });
+        let client = RegistryClient::connect(&iref, None).await.unwrap();
+        let error = client.get_manifest("demo", "latest").await.unwrap_err();
+        assert!(error.to_string().contains("307"), "{error}");
+        assert_eq!(
+            client.layer_bytes(&iref, "sha256:fixture").await.unwrap(),
+            b"layer"
+        );
+        registry_server.await.unwrap();
+        cdn_server.await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn blob_redirect_loops_fail_within_the_hop_limit() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            loop {
+                respond(&listener, &format!("HTTP/1.1 307 Temporary Redirect\r\nLocation: http://{address}/loop\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")).await;
+            }
+        });
+        let client = crate::http::client_builder()
+            .no_proxy()
+            .redirect(blob_redirect_policy())
+            .build()
+            .unwrap();
+        let error = tokio::time::timeout(
+            std::time::Duration::from_secs(2),
+            client.get(format!("http://{address}/loop")).send(),
+        )
+        .await
+        .expect("redirect hops must be bounded")
+        .unwrap_err();
+        server.abort();
+        assert!(error.is_redirect(), "{error}");
+    }
 
     #[test]
     fn parses_image_refs() {
