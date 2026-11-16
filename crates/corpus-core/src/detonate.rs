@@ -112,7 +112,7 @@ pub struct CapeProvider {
 impl CapeProvider {
     pub fn new(base: &str, token: Option<String>) -> CapeProvider {
         CapeProvider {
-            http: reqwest::Client::new(),
+            http: crate::http::client(),
             base: base.trim_end_matches('/').to_string(),
             token,
         }
@@ -148,6 +148,7 @@ impl DetonationProvider for CapeProvider {
             Some(t) => resp.header("Authorization", format!("Token {t}")),
             None => resp,
         }
+        .timeout(crate::http::ARTIFACT_REQUEST_TIMEOUT)
         .multipart(form)
         .send()
         .await

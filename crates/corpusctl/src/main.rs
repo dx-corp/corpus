@@ -469,7 +469,7 @@ struct Client {
 impl Client {
     fn new(base: String, tenant: Option<String>, admin_token: Option<String>) -> Self {
         Client {
-            http: reqwest::Client::new(),
+            http: corpus_core::http::client(),
             base,
             tenant,
             admin_token,
@@ -539,6 +539,7 @@ async fn commit_bytes(
                     reqwest::Method::PUT,
                     &format!("/api/v1/artifacts/uploads/{upload_id}"),
                 )
+                .timeout(corpus_core::http::ARTIFACT_REQUEST_TIMEOUT)
                 .body(bytes.to_vec())
                 .send()
                 .await?;
@@ -808,6 +809,7 @@ async fn import_dir(client: &Client, dir: &str, opts: &ImportOptions) -> Result<
                         reqwest::Method::PUT,
                         &format!("/api/v1/artifacts/uploads/{upload_id}"),
                     )
+                    .timeout(corpus_core::http::ARTIFACT_REQUEST_TIMEOUT)
                     .body(bytes.clone())
                     .send()
                     .await?;

@@ -146,7 +146,7 @@ pub async fn deliver_pending(pool: &PgPool) -> Result<usize> {
     )
     .fetch_all(pool)
     .await?;
-    let http = reqwest::Client::new();
+    let http = crate::http::client();
     let mut delivered = 0;
     for (id, _trigger, url, secret, event, attempts) in due {
         let body = event.to_string();

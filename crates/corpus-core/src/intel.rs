@@ -159,7 +159,7 @@ pub async fn fetch_taxii_indicators(
     collection: &str,
     api_key: Option<&str>,
 ) -> Result<serde_json::Value> {
-    let http = reqwest::Client::new();
+    let http = crate::http::client();
     let url = format!(
         "{}/collections/{}/objects/?type=indicator&limit=500",
         server_url.trim_end_matches('/'),
@@ -194,7 +194,7 @@ pub const MB_ZIP_PASSWORD: &[u8] = b"infected";
 
 /// List recent sample hashes (query=get_recent).
 pub async fn mb_recent_hashes(api_url: &str, limit: u32) -> Result<Vec<String>> {
-    let http = reqwest::Client::new();
+    let http = crate::http::client();
     let resp: serde_json::Value = http
         .post(api_url)
         .form(&[("query", "get_recent"), ("selector", &limit.to_string())])
@@ -227,9 +227,10 @@ pub async fn mb_recent_hashes(api_url: &str, limit: u32) -> Result<Vec<String>> 
 
 /// Download one sample zip (query=get_file).
 pub async fn mb_fetch_zip(api_url: &str, sha256: &str) -> Result<Vec<u8>> {
-    let http = reqwest::Client::new();
+    let http = crate::http::client();
     let resp = http
         .post(api_url)
+        .timeout(crate::http::ARTIFACT_REQUEST_TIMEOUT)
         .form(&[("query", "get_file"), ("sha256_hash", sha256)])
         .send()
         .await
