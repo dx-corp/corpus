@@ -11,9 +11,18 @@ Apache-2.0.
 
 ## Quickstart
 
+Run from `products/corpus` in Mono. Agents use the
+[approved Rust build host](../../docs/development.md#rust-builds-for-agents)
+for Cargo and demo scripts that compile Rust.
+
 ```sh
 docker compose up -d postgres     # PostgreSQL 16 on :5434
-cargo run -p corpus-server        # migrates, serves 127.0.0.1:8080
+cargo run --locked -p corpus-server  # migrates, serves 127.0.0.1:8080
+```
+
+Keep the server running. In a second terminal in the same directory:
+
+```sh
 bash scripts/first-hunt.sh        # import → rule → hunt → report
 ```
 
@@ -55,11 +64,11 @@ receipts are retried rather than silently acknowledged.
 | Area | Capabilities |
 |---|---|
 | **Corpus** | Content-addressed store, multi-tenant, announce-before-upload with server rehash, YARA-X immutable bundles, watermarked retro-hunts, scan cache, blast-radius |
-| **Continuous re-analysis** | Activating a bundle enqueues a full retro-hunt over retained history; sha256 intel IOCs auto hash-hunt; durable hunt worker |
+| **Continuous re-analysis** | Activating a bundle queues a full retro-hunt over retained history; sha256 intel indicators auto hash-hunt; durable hunt worker |
 | **Autonomous detection** | Forward coverage and retro matches write `detection_event` rows (severity, optional MITRE heuristic) without a prior external alert |
 | **Investigation** | `corpusctl investigate --sha256\|--hunt` → campaign report: detections, blast radius + variants, MITRE labels, recommended actions |
-| **Agents** | Linux (fanotify + poll) and Windows (user-mode RDCW + USN); mTLS enrollment; encrypted spool; coverage gaps |
-| **Similarity** | PE/ELF features, ssdeep + banded LSH candidates, typed edges, variant groups; pure-Rust function-level semantic matching (x86-64) |
+| **Agents** | Linux (`fanotify` + poll) and Windows (user-mode RDCW + USN); mTLS enrollment; encrypted spool; coverage gaps |
+| **Similarity** | PE/ELF features, `ssdeep` + banded LSH candidates, typed edges, variant groups; pure-Rust function-level semantic matching (x86-64) |
 | **Bootstrap** | Snapshot backfill, OCI import, TAXII / MalwareBazaar intel |
 | **Analyst** | Prevalence, rarity search, opinions, webhook triggers, dropper leads, proof-of-absence, read-only MCP, `GET /api/v1/metrics` |
 | **Detonation** | Optional CAPEv2 adapter; sample egress off by default |
@@ -88,13 +97,13 @@ Start at **[docs/README.md](docs/README.md)** (read order: intent → architectu
 | [docs/architecture.md](docs/architecture.md) | Processes, trust boundaries, planes, sequences |
 | [docs/invariants.md](docs/invariants.md) | Numbered guarantees + enforcing code |
 | [docs/data-model.md](docs/data-model.md) | Glossary, tables, relationships |
-| [docs/spec-map.md](docs/spec-map.md) | Spec section → implementation |
+| [docs/spec-map.md](docs/spec-map.md) | Specification section → implementation |
 | [docs/threat-model.md](docs/threat-model.md) | Assets, actors, residual risk |
 | [docs/runbooks.md](docs/runbooks.md) | Operator procedures |
 | [docs/adrs/](docs/adrs/) | Architecture decision records |
-| [docs/deploy.md](docs/deploy.md) | Env vars, auth policy, first hunt, gVisor, reverse proxy |
+| [docs/deploy.md](docs/deploy.md) | Env vars, auth policy, first hunt, `gVisor`, reverse proxy |
 | [docs/openapi.toml](docs/openapi.toml) | HTTP API (`GET /api/v1/openapi.json`) |
-| [docs/hardening-decisions.md](docs/hardening-decisions.md) | mTLS, spool crypto, sandbox research |
+| [docs/hardening-decisions.md](docs/hardening-decisions.md) | mTLS, spool cryptography, sandbox research |
 | [docs/semantic-similarity-design.md](docs/semantic-similarity-design.md) | Function-level matching |
 | [docs/detonation-design.md](docs/detonation-design.md) | CAPE adapter |
 

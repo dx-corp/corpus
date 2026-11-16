@@ -109,9 +109,10 @@ pub async fn run_sandboxed(
         let mut c = tokio::process::Command::new(scanner);
         // Landlock best-effort: narrow filesystem view in the child.
         let sample = sample_dir.to_path_buf();
+        let executable = scanner.to_path_buf();
         unsafe {
             c.pre_exec(move || {
-                if let Err(e) = apply_landlock(&sample) {
+                if let Err(e) = apply_landlock(&sample, &executable) {
                     eprintln!("landlock unavailable ({e}); running without filesystem sandbox");
                 }
                 Ok(())
@@ -163,7 +164,10 @@ pub async fn run_sandboxed(
 }
 
 #[cfg(target_os = "linux")]
-fn apply_landlock(sample_dir: &Path) -> std::io::Result<()> {
+fn apply_landlock(
+    sample_dir: &Path,
+    scanner: &Path,
+) -> std::io::Result<landlock::RestrictionStatus> {
     use landlock::{
         ABI, Access, AccessFs, CompatLevel, Compatible, Ruleset, RulesetAttr, RulesetCreatedAttr,
     };
@@ -188,9 +192,15 @@ fn apply_landlock(sample_dir: &Path) -> std::io::Result<()> {
             AccessFs::from_read(abi),
         ))
         .map_err(|e| std::io::Error::other(e.to_string()))?
+        // Cargo and operator-selected scanners can live outside /usr. Grant
+        // the executable itself, without exposing its containing directory.
+        .add_rules(landlock::path_beneath_rules(
+            [scanner],
+            AccessFs::ReadFile | AccessFs::Execute,
+        ))
+        .map_err(|e| std::io::Error::other(e.to_string()))?
         .restrict_self()
-        .map_err(|e| std::io::Error::other(e.to_string()))?;
-    Ok(())
+        .map_err(|e| std::io::Error::other(e.to_string()))
 }
 
 /// Scan with the configured tier. `compiled` is used only for the
@@ -519,6 +529,42 @@ mod tests {
 
     const RULE: &str =
         r#"rule SandboxMarker { strings: $m = "CORPUS_SANDBOX_MARKER" condition: $m }"#;
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn landlock_allows_the_scanner_without_reading_its_neighbor() {
+        let samples = tempfile::tempdir().unwrap();
+        let sample = samples.path().join("sample.bin");
+        std::fs::write(&sample, b"sample").unwrap();
+        let binaries = tempfile::tempdir().unwrap();
+        let scanner = binaries.path().join("scanner");
+        let neighbor = binaries.path().join("unrelated-secret");
+        std::fs::write(&scanner, b"scanner").unwrap();
+        std::fs::write(&neighbor, b"private").unwrap();
+        let sample_dir = samples.path().to_path_buf();
+        // Restrict this disposable thread only. The test runner and the
+        // parent-owned temporary-directory cleanup remain unrestricted.
+        let status = std::thread::spawn(move || {
+            let status = apply_landlock(&sample_dir, &scanner).unwrap();
+            if status.ruleset == landlock::RulesetStatus::FullyEnforced {
+                assert_eq!(std::fs::read(scanner).unwrap(), b"scanner");
+                assert_eq!(std::fs::read(sample).unwrap(), b"sample");
+                assert_eq!(
+                    std::fs::read(neighbor).unwrap_err().kind(),
+                    std::io::ErrorKind::PermissionDenied,
+                );
+            }
+            status.ruleset
+        })
+        .join()
+        .unwrap();
+        // The production boundary deliberately supports kernels without
+        // Landlock. Record which branch ran instead of claiming enforcement.
+        // Keep the capability result visible even when the test harness
+        // captures successful test output in CI.
+        use std::io::Write as _;
+        let _ = writeln!(std::io::stderr(), "landlock neighbor boundary: {status:?}");
+    }
 
     #[tokio::test]
     async fn subprocess_scan_matches_and_isolated_run() {
