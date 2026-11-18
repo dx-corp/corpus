@@ -7,32 +7,13 @@ db-urls = ["https://github.com/rustsec/advisory-db"]
 # when Mono imported it unchanged. The Corpus lockfile update that clears them is
 # the next Corpus change after the import; delete each entry as its crate moves.
 ignore = [
-    { id = "RUSTSEC-2023-0071", reason = "rsa 0.9.10 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
+    { id = "RUSTSEC-2026-0543", reason = "chrono 0.4.45 is unmaintained in products/corpus through corpus-agent -> chrono, sqlx-core -> chrono, yara-x-proto -> chrono. RustSec reports all versions affected with no patched release; a version bump cannot remove this maintenance advisory. Replacing these timestamp bindings requires compatibility verification for serialization, scheduling and storage before removal; track the migration at https://github.com/dx-corp/mono/issues/23895. This accepts only the maintenance advisory and makes no claim about untrusted input safety. Remove after migration or re-review at expiry. expires: 2026-11-24" },
     { id = "RUSTSEC-2024-0449", reason = "unsafe-libyaml 0.2.11 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
     { id = "RUSTSEC-2025-0134", reason = "rustls-pemfile 2.2.0 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
     { id = "RUSTSEC-2025-0141", reason = "bincode 2.0.1 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
-    { id = "RUSTSEC-2026-0222", reason = "wasmtime 43.0.2 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
     { id = "RUSTSEC-2026-0258", reason = "h2 0.4.15 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
-    { id = "RUSTSEC-2026-0269", reason = "wasmtime 43.0.2 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
-    { id = "RUSTSEC-2026-0285", reason = "rustls 0.23.43 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
-    { id = "RUSTSEC-2026-0316", reason = "wasmtime 43.0.2 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
-    { id = "RUSTSEC-2026-0327", reason = "wasmtime 43.0.2 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
-    { id = "RUSTSEC-2026-0346", reason = "rustls 0.23.43 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
-    { id = "RUSTSEC-2026-0348", reason = "rustls 0.23.43 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
-    { id = "RUSTSEC-2026-0349", reason = "rustls 0.23.43 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
-    { id = "RUSTSEC-2026-0359", reason = "wasmtime 43.0.2 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
-    { id = "RUSTSEC-2026-0362", reason = "wasmtime 43.0.2 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
-    { id = "RUSTSEC-2026-0363", reason = "wasmtime 43.0.2 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
-    { id = "RUSTSEC-2026-0367", reason = "zip 8.6.0 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
-    { id = "RUSTSEC-2026-0368", reason = "zip 8.6.0 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
-    { id = "RUSTSEC-2026-0369", reason = "zip 8.6.0 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
-    { id = "RUSTSEC-2026-0379", reason = "wasmtime 43.0.2 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
     { id = "RUSTSEC-2026-0381", reason = "webpki-roots 1.0.9 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
-    { id = "RUSTSEC-2026-0382", reason = "rustls-webpki 0.103.13 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
     { id = "RUSTSEC-2026-0386", reason = "tokio 1.53.1 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
-    { id = "RUSTSEC-2026-0387", reason = "crypto-bigint 0.5.5 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
-    { id = "RUSTSEC-2026-0424", reason = "wasmtime 43.0.2 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
-    { id = "RUSTSEC-2026-0429", reason = "zip 8.6.0 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
     { id = "RUSTSEC-2026-0459", reason = "libsqlite3-sys 0.30.1 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
 ]
 
