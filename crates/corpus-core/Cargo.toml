@@ -37,6 +37,13 @@ flate2 = "1"
 zip = { version = "=9.0.5", default-features = false, features = ["deflate"] }
 uuid = { version = "1", features = ["v4", "v5", "serde"] }
 yara-x = "1.22.1"
+# Yara's Authenticode verifier uses this legacy signature format. RSA 0.10
+# requires explicit opt-in; enable it on the same version selected by Yara.
+rsa = { version = "0.10", default-features = false, features = ["pkcs1v15"] }
+
+[package.metadata.cargo-shear]
+# This edge enables Yara's transitive verification feature; Corpus does not call RSA directly.
+ignored = ["rsa"]
 
 [target.'cfg(target_os = "linux")'.dependencies]
 landlock = "0.4"

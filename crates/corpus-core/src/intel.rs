@@ -262,7 +262,10 @@ pub fn mb_unzip(zip_bytes: &[u8]) -> Result<Vec<(String, Vec<u8>)>> {
         {
             if let Ok(mut file) = archive.by_index_decrypt(i, MB_ZIP_PASSWORD) {
                 if file.is_file() {
-                    let name = file.name().to_string();
+                    let name = file
+                        .name()
+                        .map_err(|e| Error::BadRequest(format!("zip entry {i} name: {e}")))?
+                        .into_owned();
                     let mut buf = Vec::new();
                     if std::io::Read::read_to_end(&mut file, &mut buf).is_ok() {
                         entry = Some((name, buf));
@@ -277,7 +280,10 @@ pub fn mb_unzip(zip_bytes: &[u8]) -> Result<Vec<(String, Vec<u8>)>> {
             if !file.is_file() {
                 continue;
             }
-            let name = file.name().to_string();
+            let name = file
+                .name()
+                .map_err(|e| Error::BadRequest(format!("zip entry {i} name: {e}")))?
+                .into_owned();
             let mut buf = Vec::new();
             std::io::Read::read_to_end(&mut file, &mut buf)
                 .map_err(|e| Error::BadRequest(e.to_string()))?;
@@ -303,6 +309,30 @@ mod mb_zip_tests {
         assert_eq!(files.len(), 1);
         assert_eq!(files[0].0, "sample.exe");
         assert_eq!(files[0].1, b"MZ fake sample");
+    }
+
+    #[test]
+    fn unzips_legacy_cp437_filename() {
+        let mut writer = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
+        writer
+            .start_file("sample.exe", zip::write::SimpleFileOptions::default())
+            .unwrap();
+        std::io::Write::write_all(&mut writer, b"MZ fake sample").unwrap();
+        let mut zip_bytes = writer.finish().unwrap().into_inner();
+        // Keep the local and central names consistent while exercising Zip's
+        // owned CP437 decoding result instead of a borrowed UTF-8 name.
+        for (signature, name_offset) in [(b"PK\x03\x04", 30), (b"PK\x01\x02", 46)] {
+            let header = zip_bytes
+                .windows(signature.len())
+                .position(|window| window == signature)
+                .unwrap();
+            zip_bytes[header + name_offset] = 0x82;
+        }
+        let files = mb_unzip(&zip_bytes).unwrap();
+        assert_eq!(
+            files,
+            vec![("éample.exe".to_string(), b"MZ fake sample".to_vec())]
+        );
     }
 }
 
