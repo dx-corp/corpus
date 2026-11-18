@@ -667,6 +667,7 @@ dependencies = [
  "landlock",
  "rcgen",
  "reqwest",
+ "rsa 0.10.0",
  "rustls",
  "rustls-pemfile",
  "serde",
