@@ -3,18 +3,15 @@ all-features = false
 
 [advisories]
 db-urls = ["https://github.com/rustsec/advisory-db"]
-# Every entry below was present in dx-corp/corpus@42926cb9539da44f211dd7fecb5dd23ed44ce2d2
-# when Mono imported it unchanged. The Corpus lockfile update that clears them is
-# the next Corpus change after the import; delete each entry as its crate moves.
+# Each entry names the dependency path that keeps the advisory and what removes it.
+# Advisories a lockfile update could clear (h2, webpki-roots, tokio) were cleared
+# that way; delete each remaining entry as its crate moves.
 ignore = [
     { id = "RUSTSEC-2026-0543", reason = "chrono 0.4.45 is unmaintained in products/corpus through corpus-agent -> chrono, sqlx-core -> chrono, yara-x-proto -> chrono. RustSec reports all versions affected with no patched release; a version bump cannot remove this maintenance advisory. Replacing these timestamp bindings requires compatibility verification for serialization, scheduling and storage before removal; track the migration at https://github.com/dx-corp/mono/issues/23895. This accepts only the maintenance advisory and makes no claim about untrusted input safety. Remove after migration or re-review at expiry. Reviewed on 2026-11-25 against the workspace lockfile and current RustSec record. expires: 2026-12-02" },
-    { id = "RUSTSEC-2024-0449", reason = "unsafe-libyaml 0.2.11 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
-    { id = "RUSTSEC-2025-0134", reason = "rustls-pemfile 2.2.0 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
-    { id = "RUSTSEC-2025-0141", reason = "bincode 2.0.1 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
-    { id = "RUSTSEC-2026-0258", reason = "h2 0.4.15 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
-    { id = "RUSTSEC-2026-0381", reason = "webpki-roots 1.0.9 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
-    { id = "RUSTSEC-2026-0386", reason = "tokio 1.53.1 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
-    { id = "RUSTSEC-2026-0459", reason = "libsqlite3-sys 0.30.1 in the unchanged dx-corp/corpus import lockfile; cleared by the Corpus lockfile update that follows the import. expires: 2026-11-26" },
+    { id = "RUSTSEC-2024-0449", reason = "unsafe-libyaml 0.2.11 is unmaintained, reached only through serde_yaml 0.9.34+deprecated, a direct dependency of corpus-agent. RustSec lists no patched release, so no lockfile update removes it; replacing serde_yaml in corpus-agent clears it. Re-reviewed 2026-11-25 against products/corpus/Cargo.lock. expires: 2026-12-09" },
+    { id = "RUSTSEC-2025-0134", reason = "rustls-pemfile 2.2.0 is unmaintained and is a direct dependency of corpus-core. RustSec lists no patched release; moving corpus-core to the PEM parser in rustls-pki-types clears it. Re-reviewed 2026-11-25 against products/corpus/Cargo.lock. expires: 2026-12-09" },
+    { id = "RUSTSEC-2025-0141", reason = "bincode 2.0.1 is unmaintained, reached only through yara-x 1.23.0 in corpus-core. RustSec lists no patched release and yara-x still requires bincode ^2 (see products/deixic-endpoint/deny.toml), so no upgrade removes it. Re-reviewed 2026-11-25 against products/corpus/Cargo.lock. expires: 2026-12-09" },
+    { id = "RUSTSEC-2026-0459", reason = "libsqlite3-sys 0.30.1 through rusqlite 0.32.1 (corpus-agent) and sqlx-sqlite 0.8.6. The patched line is 0.39, which needs a rusqlite and sqlx major upgrade, not a lockfile update. Re-reviewed 2026-11-25 against products/corpus/Cargo.lock. expires: 2026-12-09" },
 ]
 
 [licenses]
